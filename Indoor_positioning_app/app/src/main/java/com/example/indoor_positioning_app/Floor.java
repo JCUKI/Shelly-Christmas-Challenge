@@ -1,3 +1,5 @@
+package com.example.indoor_positioning_app;
+
 import java.util.ArrayList;
 
 //Implemented according to: https://guides.codepath.com/android/using-the-recyclerview
@@ -8,11 +10,6 @@ public class Floor {
     public Floor(String name, int number) {
         _name = name;
         _number = number;
-    }
-
-    public Floor() {
-        _name = "";
-        _number = 0;
     }
 
     public String getName() {
@@ -26,12 +23,12 @@ public class Floor {
     private static int lastContactId = 0;
 
     public static ArrayList<Floor> createFloorList(int numberOfFloors) {
-        ArrayList<Floor> floor = new ArrayList<Floor>();
+        ArrayList<Floor> floors = new ArrayList<Floor>();
 
         //TODO: fix this according to the actual number of floors
         for (int i = 0; i <= 3; i++) {
-            floor.add(new Floor("Floor" + Integer.toString(i), i));
+            floors.add(new Floor("Floor " + Integer.toString(i), i));
         }
-        return floor;
+        return floors;
     }
 }
