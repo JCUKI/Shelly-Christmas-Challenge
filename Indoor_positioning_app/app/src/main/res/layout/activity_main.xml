@@ -27,7 +27,9 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
             <TextView
-                android:text="Image with current position"/>
+                android:text="Image with current position"
+                android:id="@+id/currentImage"
+                />
         </TableRow>
 
         <TableRow

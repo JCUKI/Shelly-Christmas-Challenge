@@ -14,23 +14,39 @@ import java.util.List;
 
 //Implemented according to: https://guides.codepath.com/android/using-the-recyclerview
 public class FloorAdapter extends RecyclerView.Adapter<FloorAdapter.ViewHolder> {
+    private final RecyclerViewInterface _recyclerViewInterface;
+
+
     // Provide a direct reference to each of the views within a data item
     // Used to cache the views within the item layout for fast access
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    public static class ViewHolder extends RecyclerView.ViewHolder {
         // Your holder should contain a member variable
         // for any view that will be set as you render a row
         public TextView nameTextView;
-        public Button messageButton;
 
         // We also create a constructor that accepts the entire item row
         // and does the view lookups to find each subview
-        public ViewHolder(View itemView) {
+        public ViewHolder(View itemView, RecyclerViewInterface recyclerViewInterface) {
             // Stores the itemView in a public final member variable that can be used
             // to access the context from any ViewHolder instance.
             super(itemView);
 
             nameTextView = (TextView) itemView.findViewById(R.id.floor_name);
-            messageButton = (Button) itemView.findViewById(R.id.message_button);
+
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(recyclerViewInterface != null)
+                    {
+                        int position = getAdapterPosition();
+
+                        if(position != RecyclerView.NO_POSITION)
+                        {
+                            recyclerViewInterface.onItemClick(position);
+                        }
+                    }
+                }
+            });
         }
     }
 
@@ -38,7 +54,8 @@ public class FloorAdapter extends RecyclerView.Adapter<FloorAdapter.ViewHolder> 
     private List<Floor> mFloors;
 
     // Pass in the contact array into the constructor
-    public FloorAdapter(List<Floor> floors) {
+    public FloorAdapter(List<Floor> floors, RecyclerViewInterface recyclerViewInterface) {
+        _recyclerViewInterface = recyclerViewInterface;
         mFloors = floors;
     }
 
@@ -53,7 +70,7 @@ public class FloorAdapter extends RecyclerView.Adapter<FloorAdapter.ViewHolder> 
         View contactView = inflater.inflate(R.layout.item_floor, parent, false);
 
         // Return a new holder instance
-        ViewHolder viewHolder = new ViewHolder(contactView);
+        ViewHolder viewHolder = new ViewHolder(contactView, _recyclerViewInterface);
         return viewHolder;
     }
 
@@ -66,8 +83,6 @@ public class FloorAdapter extends RecyclerView.Adapter<FloorAdapter.ViewHolder> 
         // Set item views based on your views and data model
         TextView textView = holder.nameTextView;
         textView.setText(floor.getName());
-        Button button = holder.messageButton;
-        button.setText("Show");
     }
 
     // Returns the total count of items in the list
