@@ -16,8 +16,10 @@
             android:text="Floors"/>
         </TableRow>
         <TableRow>
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvFloors"
+                android:layout_height="wrap_content"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -26,10 +28,11 @@
         <TableRow
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-            <TextView
-                android:text="Image with current position"
+
+            <com.ortiz.touchview.TouchImageView
                 android:id="@+id/currentImage"
-                />
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
         </TableRow>
 
         <TableRow
