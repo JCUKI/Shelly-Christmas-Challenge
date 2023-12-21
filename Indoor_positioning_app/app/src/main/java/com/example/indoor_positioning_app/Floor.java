@@ -26,7 +26,7 @@ public class Floor {
         ArrayList<Floor> floors = new ArrayList<Floor>();
 
         //TODO: fix this according to the actual number of floors
-        for (int i = 0; i <= 3; i++) {
+        for (int i = 0; i < numberOfFloors; i++) {
             floors.add(new Floor("Floor " + Integer.toString(i), i));
         }
         return floors;
