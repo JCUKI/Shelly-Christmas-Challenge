@@ -1,5 +1,6 @@
 package com.example.indoor_positioning_app;
 
+import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
 import static com.example.indoor_positioning_app.CustomDrawing.drawPoly;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,6 +19,15 @@ import android.widget.Toast;
 
 import com.j256.ormlite.misc.IOUtils;
 
+import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,6 +40,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import info.mqtt.android.service.MqttAndroidClient;
+import info.mqtt.android.service.QoS;
 import mil.nga.geopackage.BoundingBox;
 import mil.nga.geopackage.GeoPackage;
 import mil.nga.geopackage.GeoPackageFactory;
@@ -47,8 +59,8 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     private ArrayList<Floor> _floorItems = null;
     private List<GeoPackage> _geoPackages = null;
     private List<Bitmap> _floorPlans = null;
-
     private ImageView _floorImageView = null;
+    private MqttAndroidClient mqttAndroidClient = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +72,8 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         PrepareFloorPlans();
         ShowImageAtPosition(0);
         InitializeFloorsRecycleView(_floorPlans.size());
+
+        MQTTSubscribeDemo();
     }
 
     private void InitializeFloorsRecycleView(int numberOfFloors)
@@ -107,17 +121,11 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
         GeoPackageManager _gpkgManager = GeoPackageFactory.getManager(this);
 
-
-
         String[] gpkgFiles = ListGpkgsFromAssets();
         if (gpkgFiles.length == 0) {
             Toast.makeText(this, "No gpkg files available!", Toast.LENGTH_SHORT).show();
             return result;
         }
-
-
-
-
 
         // Try to import each gpkg file
         try {
@@ -207,12 +215,79 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         _floorImageView.setImageBitmap(_floorPlans.get(position));
     }
 
-
-//   String a = featureRow.getValue("name").toString();
-
-
     @Override
     public void onItemClick(int position) {
         ShowImageAtPosition(position);
+    }
+
+    private void MQTTSubscribeDemo(){
+        mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), "tcp://192.168.5.15:1883", MqttClient.generateClientId());
+
+        mqttAndroidClient.setCallback(new MqttCallbackExtended() {
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+                if (reconnect) {
+                    Log.d("MQTT","Reconnected: " + serverURI) ;
+                    // Because Clean Session is true, we need to re-subscribe
+                    subscribeToTopic();
+                } else {
+                    Log.d("MQTT","Connected: " + serverURI);
+                }
+            }
+
+            @Override
+            public void connectionLost(Throwable cause) {
+
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                Log.i(TAG, "topic: " + topic + ", msg: " + new String(message.getPayload()));
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+
+            }
+        });
+
+        MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
+        mqttConnectOptions.setAutomaticReconnect(true);
+        mqttConnectOptions.setCleanSession(false);
+        Log.d("MQTT","Connected");
+
+
+        mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
+            @Override
+            public void onSuccess(IMqttToken asyncActionToken) {
+                DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
+                disconnectedBufferOptions.setBufferEnabled(true);
+                disconnectedBufferOptions.setBufferSize(100);
+                disconnectedBufferOptions.setPersistBuffer(false);
+                disconnectedBufferOptions.setDeleteOldestMessages(false);
+                mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
+                subscribeToTopic();
+            }
+
+            @Override
+            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                Log.d("MQTT","Failed to connect");
+            }
+        });
+
+    }
+
+    void subscribeToTopic() {
+        mqttAndroidClient.subscribe("ShellyTopic", QoS.AtLeastOnce.getValue(), null, new IMqttActionListener() {
+            @Override
+            public void onSuccess(IMqttToken asyncActionToken) {
+                Log.d("MQTT", "onSuccess: ");
+            }
+
+            @Override
+            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                Log.d("MQTT", "onFailure: ");
+            }
+        });
     }
 }
