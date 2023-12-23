@@ -32,6 +32,8 @@ android {
 }
 
 dependencies {
+    implementation("androidx.legacy:legacy-support-v4:1.0.0")
+    implementation("com.github.hannesa2:paho.mqtt.android:4.2")
     implementation("com.github.MikeOrtiz:TouchImageView:1.4.1")
     implementation("mil.nga.geopackage:geopackage-android:6.7.3")
     implementation("androidx.appcompat:appcompat:1.6.1")
