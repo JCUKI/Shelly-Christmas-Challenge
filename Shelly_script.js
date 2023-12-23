@@ -1,1 +1,3 @@
-MQTT.publish("ShellyTopic/PlusPlugS_1", "test", 0, false)
+Timer.set(1000, true, function() {
+MQTT.publish("ShellyTopic", "test1", 1, false)
+});
