@@ -1,0 +1,1 @@
+MQTT.publish("ShellyTopic/PlusPlugS_1", "test", 0, false)
