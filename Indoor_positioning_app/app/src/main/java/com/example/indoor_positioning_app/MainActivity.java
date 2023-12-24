@@ -68,14 +68,13 @@ import mil.nga.sf.Point;
 
 public class MainActivity extends AppCompatActivity implements RecyclerViewInterface {
 
-
-    private ArrayList<Floor> _floorItems = null;
-    private List<GeoPackage> _geoPackages = null;
     private List<Bitmap> _floorPlans = null;
     private ImageView _floorImageView = null;
-    private MqttAndroidClient mqttAndroidClient = null;
 
     private BeaconScanner beaconScanner = null;
+    private MQTTHelper mqttHelper = null;
+
+    private FloorImageHandler floorImageHandler = null;
 
 
     @Override
@@ -86,25 +85,20 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         _floorImageView = (ImageView) findViewById(R.id.currentImage);
 
         beaconScanner = new BeaconScanner(getApplicationContext(), this);
-
-       // startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                66667);
-
-        //Bluetooth - TODO: add to seperate file
         SetBluetoothScanListener();
 
+        mqttHelper = new MQTTHelper(getApplicationContext());
+        mqttHelper.MQTTSubscribe();
 
-        PrepareFloorPlans();
+        floorImageHandler = new FloorImageHandler(this);
+        _floorPlans = floorImageHandler.GetFloorPlans();
+
         ShowImageAtPosition(0);
+
         InitializeFloorsRecycleView(_floorPlans.size());
-
-
-        MQTTSubscribeDemo();
     }
 
     private void SetBluetoothScanListener() {
-
         findViewById(R.id.startButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -115,127 +109,13 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
     private void InitializeFloorsRecycleView(int numberOfFloors) {
         RecyclerView floorsRecyclerView = (RecyclerView) findViewById(R.id.rvFloors);
-        _floorItems = Floor.createFloorList(numberOfFloors);
+        ArrayList<Floor> _floorItems = Floor.createFloorList(numberOfFloors);
         // Create adapter passing in the sample user data
         FloorAdapter adapter = new FloorAdapter(_floorItems, this);
         // Attach the adapter to the recyclerview to populate items
         floorsRecyclerView.setAdapter(adapter);
         // Set layout manager to position the items
         floorsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-    }
-
-    public File BytesToFile(byte[] buffer) throws IOException {
-        String path = MainActivity.this.getFilesDir() + "/targetFile3.gpkg";
-        Files.deleteIfExists(Paths.get(path));
-
-        File targetFile = new File(path);
-        OutputStream outStream = new FileOutputStream(targetFile);
-        outStream.write(buffer);
-
-        IOUtils.closeQuietly(outStream);
-        return targetFile;
-    }
-
-    private String[] ListGpkgsFromAssets() {
-        try {
-            return getAssets().list("gpkgs");
-        } catch (IOException e) {
-            Toast.makeText(this, "Unable to open gpkg files in assets!\n Exception: " + e.toString(), Toast.LENGTH_SHORT).show();
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void PrepareFloorPlans() {
-        _geoPackages = LoadFloorPlansGPKGs();
-        _floorPlans = LoadImagesFromGPKGs(_geoPackages);
-    }
-
-    private List<GeoPackage> LoadFloorPlansGPKGs() {
-        List<GeoPackage> result = new ArrayList<GeoPackage>();
-
-        GeoPackageManager _gpkgManager = GeoPackageFactory.getManager(this);
-
-        String[] gpkgFiles = ListGpkgsFromAssets();
-        if (gpkgFiles.length == 0) {
-            Toast.makeText(this, "No gpkg files available!", Toast.LENGTH_SHORT).show();
-            return result;
-        }
-
-        // Try to import each gpkg file
-        try {
-            for (String file : gpkgFiles) {
-                _gpkgManager = GeoPackageFactory.getManager(this);
-                InputStream gpkgStream = getAssets().open("gpkgs/" + file);
-
-                gpkgStream.reset();
-                byte[] arr = new byte[gpkgStream.available()];
-                DataInputStream dataInputStream = new DataInputStream(gpkgStream);
-                dataInputStream.readFully(arr);
-
-                try {
-                    boolean imported = _gpkgManager.importGeoPackage("file_" + file, BytesToFile(arr));
-                } catch (Exception ex) {
-                }
-            }
-
-            List<String> databases = _gpkgManager.databases();
-            Collections.sort(databases);
-            for (String database : databases) {
-                GeoPackage geoPackage = _gpkgManager.open(database);
-                result.add(geoPackage);
-            }
-        } catch (Exception ex) {
-            Log.d("GPKG", "GPKGmanager.importGeoPackage error");
-        }
-        return result;
-    }
-
-    private List<Bitmap> LoadImagesFromGPKGs(List<GeoPackage> geoPackages) {
-        List<Bitmap> result = new ArrayList<Bitmap>();
-
-        Paint pt = new Paint();
-        pt.setStyle(Paint.Style.STROKE);
-        pt.setColor(Color.BLUE);
-
-        for (GeoPackage geoPackage : geoPackages) {
-            // Query Features
-            List<String> features = geoPackage.getFeatureTables();
-            String featureTable = features.get(0);
-            FeatureDao featureDao = geoPackage.getFeatureDao(featureTable);
-            FeatureCursor featureCursor = featureDao.queryForAll();
-
-            BoundingBox bbox = featureDao.getBoundingBox();
-            int height = (int) bbox.getMaxLatitude();
-            int width = (int) bbox.getMaxLongitude();
-
-            Bitmap myBitmap = Bitmap.createBitmap(width + 10, height + 10, Bitmap.Config.RGB_565);
-            Canvas canvas = new Canvas(myBitmap);
-            canvas.drawColor(Color.WHITE);
-
-            try {
-                for (FeatureRow featureRow : featureCursor) {
-                    GeoPackageGeometryData geometryData = featureRow.getGeometry();
-
-                    if (geometryData != null && !geometryData.isEmpty()) {
-
-                        Geometry geometry = geometryData.getGeometry();
-                        MultiPolygon polygon = (MultiPolygon) geometry;
-                        List<Point> points = polygon.getPolygon(0).getRing(0).getPoints();
-
-                        CustomDrawing.Point[] customPoints = new CustomDrawing.Point[points.size()];
-
-                        for (int i = 0; i < points.size(); i++) {
-                            customPoints[i] = new CustomDrawing.Point((int) points.get(i).getX(), (int) points.get(i).getY());
-                        }
-                        drawPoly(canvas, pt, customPoints);
-                    }
-                }
-            } finally {
-                featureCursor.close();
-            }
-            result.add(myBitmap);
-        }
-        return result;
     }
 
     private void ShowImageAtPosition(int position) {
@@ -247,72 +127,6 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         ShowImageAtPosition(position);
     }
 
-    private void MQTTSubscribeDemo() {
-        mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), "tcp://192.168.5.15:1883", MqttClient.generateClientId());
-
-        mqttAndroidClient.setCallback(new MqttCallbackExtended() {
-            @Override
-            public void connectComplete(boolean reconnect, String serverURI) {
-                if (reconnect) {
-                    Log.d("MQTT", "Reconnected: " + serverURI);
-                    // Because Clean Session is true, we need to re-subscribe
-                    SubscribeToTopic();
-                } else {
-                    Log.d("MQTT", "Connected: " + serverURI);
-                }
-            }
-
-            @Override
-            public void connectionLost(Throwable cause) {
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
-                Log.i(TAG, "topic: " + topic + ", msg: " + new String(message.getPayload()));
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-            }
-        });
-
-        MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
-        mqttConnectOptions.setAutomaticReconnect(true);
-        mqttConnectOptions.setCleanSession(false);
-        Log.d("MQTT", "Connected");
-
-        mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
-            @Override
-            public void onSuccess(IMqttToken asyncActionToken) {
-                DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
-                disconnectedBufferOptions.setBufferEnabled(true);
-                disconnectedBufferOptions.setBufferSize(100);
-                disconnectedBufferOptions.setPersistBuffer(false);
-                disconnectedBufferOptions.setDeleteOldestMessages(false);
-                mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
-                SubscribeToTopic();
-            }
-
-            @Override
-            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                Log.d("MQTT", "Failed to connect");
-            }
-        });
-    }
-
-    void SubscribeToTopic() {
-        mqttAndroidClient.subscribe("ShellyTopic", QoS.AtLeastOnce.getValue(), null, new IMqttActionListener() {
-            @Override
-            public void onSuccess(IMqttToken asyncActionToken) {
-                Log.d("MQTT", "onSuccess: ");
-            }
-
-            @Override
-            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                Log.d("MQTT", "onFailure: ");
-            }
-        });
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
