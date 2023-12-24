@@ -14,7 +14,6 @@ import android.graphics.Paint;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.j256.ormlite.misc.IOUtils;
@@ -78,14 +77,14 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
     private void InitializeFloorsRecycleView(int numberOfFloors)
     {
-        RecyclerView Floors_RecyclerView = (RecyclerView) findViewById(R.id.rvFloors);
+        RecyclerView floorsRecyclerView = (RecyclerView) findViewById(R.id.rvFloors);
         _floorItems = Floor.createFloorList(numberOfFloors);
         // Create adapter passing in the sample user data
         FloorAdapter adapter = new FloorAdapter(_floorItems, this);
         // Attach the adapter to the recyclerview to populate items
-        Floors_RecyclerView.setAdapter(adapter);
+        floorsRecyclerView.setAdapter(adapter);
         // Set layout manager to position the items
-        Floors_RecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        floorsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
     }
 
     public File BytesToFile(byte[] buffer) throws IOException {
@@ -132,7 +131,6 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
             for (String file : gpkgFiles)
             {
                 _gpkgManager = GeoPackageFactory.getManager(this);
-                //for (String file : gpkgFiles) {
                 InputStream gpkgStream = getAssets().open("gpkgs/" + file);
 
                 gpkgStream.reset();
@@ -229,16 +227,14 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
                 if (reconnect) {
                     Log.d("MQTT","Reconnected: " + serverURI) ;
                     // Because Clean Session is true, we need to re-subscribe
-                    subscribeToTopic();
+                    SubscribeToTopic();
                 } else {
                     Log.d("MQTT","Connected: " + serverURI);
                 }
             }
 
             @Override
-            public void connectionLost(Throwable cause) {
-
-            }
+            public void connectionLost(Throwable cause) {}
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
@@ -246,16 +242,13 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
             }
 
             @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-
-            }
+            public void deliveryComplete(IMqttDeliveryToken token) {}
         });
 
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setCleanSession(false);
         Log.d("MQTT","Connected");
-
 
         mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
             @Override
@@ -266,7 +259,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
                 disconnectedBufferOptions.setPersistBuffer(false);
                 disconnectedBufferOptions.setDeleteOldestMessages(false);
                 mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
-                subscribeToTopic();
+                SubscribeToTopic();
             }
 
             @Override
@@ -274,10 +267,9 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
                 Log.d("MQTT","Failed to connect");
             }
         });
-
     }
 
-    void subscribeToTopic() {
+    void SubscribeToTopic() {
         mqttAndroidClient.subscribe("ShellyTopic", QoS.AtLeastOnce.getValue(), null, new IMqttActionListener() {
             @Override
             public void onSuccess(IMqttToken asyncActionToken) {
