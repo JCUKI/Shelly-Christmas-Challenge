@@ -2,7 +2,6 @@ package com.example.indoor_positioning_app;
 
 import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
 import static com.example.indoor_positioning_app.BeaconScanner.REQUEST_ENABLE_BT;
-import static com.example.indoor_positioning_app.CustomDrawing.drawPoly;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -25,6 +24,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 import android.Manifest;
@@ -69,7 +69,11 @@ import mil.nga.sf.Point;
 public class MainActivity extends AppCompatActivity implements RecyclerViewInterface {
 
     private List<Bitmap> _floorPlans = null;
+    private List<Bitmap> _gridedFloorPlans = null;
     private ImageView _floorImageView = null;
+
+    private int _currentImageIndex = -1;
+    private boolean _isGrided = false;
 
     private BeaconScanner beaconScanner = null;
     private MQTTHelper mqttHelper = null;
@@ -92,10 +96,12 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
         floorImageHandler = new FloorImageHandler(this);
         _floorPlans = floorImageHandler.GetFloorPlans();
+        _gridedFloorPlans = floorImageHandler.GetGridedFloorPlans();
 
-        ShowImageAtPosition(0);
+        ShowImageAtPosition(0, _isGrided);
 
         InitializeFloorsRecycleView(_floorPlans.size());
+        SetOnClickListenerToGridButton();
     }
 
     private void SetBluetoothScanListener() {
@@ -118,15 +124,21 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         floorsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
     }
 
-    private void ShowImageAtPosition(int position) {
-        _floorImageView.setImageBitmap(_floorPlans.get(position));
+    private void ShowImageAtPosition(int position, boolean isGrided) {
+        if(isGrided)
+        {
+            _floorImageView.setImageBitmap(_gridedFloorPlans.get(position));
+        }
+        else {
+            _floorImageView.setImageBitmap(_floorPlans.get(position));
+        }
+        _currentImageIndex = position;
     }
 
     @Override
     public void onItemClick(int position) {
-        ShowImageAtPosition(position);
+        ShowImageAtPosition(position, _isGrided);
     }
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -134,5 +146,25 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         if(resultCode == RESULT_OK && requestCode == REQUEST_ENABLE_BT){
             beaconScanner.RestartBeaconService();
         }
+    }
+
+    private void SetOnClickListenerToGridButton()
+    {
+        Button button = (Button) findViewById(R.id.showGridButton);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!_isGrided)
+                {
+                    button.setText("Hide grid");
+                    _isGrided = true;
+                }
+                else{
+                    button.setText("Show grid");
+                    _isGrided = false;
+                }
+                ShowImageAtPosition(_currentImageIndex, _isGrided);
+            }
+        });
     }
 }

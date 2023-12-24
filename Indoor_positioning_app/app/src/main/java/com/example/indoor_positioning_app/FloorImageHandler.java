@@ -1,6 +1,7 @@
 package com.example.indoor_positioning_app;
 
-import static com.example.indoor_positioning_app.CustomDrawing.drawPoly;
+import static com.example.indoor_positioning_app.CustomDrawing.DrawGrid;
+import static com.example.indoor_positioning_app.CustomDrawing.DrawPoly;
 
 import android.app.Activity;
 import android.content.Context;
@@ -43,6 +44,7 @@ public class FloorImageHandler {
 
     private List<GeoPackage> _geoPackages = null;
     private List<Bitmap> _floorPlans = null;
+    private List<Bitmap> _gridedFloorPlans = null;
     public FloorImageHandler(Context activityContext)
     {
         _activityContext = activityContext;
@@ -54,6 +56,11 @@ public class FloorImageHandler {
     {
         return _floorPlans;
     }
+    public List<Bitmap> GetGridedFloorPlans()
+    {
+        return _gridedFloorPlans;
+    }
+
 
     private File BytesToFile(byte[] buffer) throws IOException {
         String path = ((Activity) _activityContext).getFilesDir() + "/targetFile3.gpkg";
@@ -78,7 +85,9 @@ public class FloorImageHandler {
 
     private void PrepareFloorPlans() {
         _geoPackages = LoadFloorPlansGPKGs();
-        _floorPlans = LoadImagesFromGPKGs(_geoPackages);
+        List<List<Bitmap>> floorPlansList = LoadImagesFromGPKGs(_geoPackages);
+        _floorPlans = floorPlansList.get(0);
+        _gridedFloorPlans = floorPlansList.get(1);
     }
 
     private List<GeoPackage> LoadFloorPlansGPKGs() {
@@ -121,8 +130,9 @@ public class FloorImageHandler {
         return result;
     }
 
-    private List<Bitmap> LoadImagesFromGPKGs(List<GeoPackage> geoPackages) {
+    private List<List<Bitmap>> LoadImagesFromGPKGs(List<GeoPackage> geoPackages) {
         List<Bitmap> result = new ArrayList<Bitmap>();
+        List<Bitmap> gridedResult = new ArrayList<Bitmap>();
 
         Paint pt = new Paint();
         pt.setStyle(Paint.Style.STROKE);
@@ -156,17 +166,26 @@ public class FloorImageHandler {
                         CustomDrawing.Point[] customPoints = new CustomDrawing.Point[points.size()];
 
                         for (int i = 0; i < points.size(); i++) {
-                            customPoints[i] = new CustomDrawing.Point((int) points.get(i).getX(), (int) points.get(i).getY());
+                            customPoints[i] = new CustomDrawing.Point((int) points.get(i).getX(), (int) (height - points.get(i).getY()));
                         }
-                        drawPoly(canvas, pt, customPoints);
+                        DrawPoly(canvas, pt, customPoints);
                     }
                 }
             } finally {
                 featureCursor.close();
             }
             result.add(myBitmap);
+
+            Bitmap gridedBitmap = Bitmap.createBitmap(myBitmap);
+            Canvas gridedCanvas = new Canvas(gridedBitmap);
+            DrawGrid(gridedCanvas, 100);
+            gridedResult.add(gridedBitmap);
         }
-        return result;
+        List<List<Bitmap>> arrayOfList = new ArrayList<List<Bitmap>> ();
+        arrayOfList.add(result);
+        arrayOfList.add(gridedResult);
+
+        return arrayOfList;
     }
 
 

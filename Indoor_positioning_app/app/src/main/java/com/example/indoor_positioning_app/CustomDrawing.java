@@ -1,6 +1,7 @@
 package com.example.indoor_positioning_app;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 
@@ -26,7 +27,7 @@ public class CustomDrawing {
      * @param polyPaint
      * @param points Polygon corner points
      */
-    public static void drawPoly(Canvas canvas, Paint polyPaint, Point[] points) {
+    public static void DrawPoly(Canvas canvas, Paint polyPaint, Point[] points) {
         // line at minimum...
         if (points.length < 2) {
             return;
@@ -44,5 +45,31 @@ public class CustomDrawing {
 
         // draw
         canvas.drawPath(polyPath, polyPaint);
+    }
+
+    public static void DrawGrid(Canvas canvas, int  resolution)
+    {
+        Paint pt = new Paint();
+        pt.setStyle(Paint.Style.STROKE);
+        pt.setColor(Color.BLACK);
+
+        if(resolution > canvas.getWidth())
+        {
+            resolution = canvas.getWidth();
+        }
+        else if(resolution < 1)
+        {
+            resolution = 1;
+        }
+
+        for (int i = 0; i < canvas.getWidth(); i+=resolution)
+        {
+            canvas.drawLine(i, 0, i, canvas.getHeight(), pt);
+        }
+
+        for (int i = 0; i < canvas.getHeight(); i+=resolution)
+        {
+            canvas.drawLine( 0, i, canvas.getWidth(), i, pt);
+        }
     }
 }
