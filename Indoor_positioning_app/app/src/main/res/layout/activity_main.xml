@@ -44,7 +44,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center|center_horizontal"
-                android:text="Show position"></Button>
+                android:text="Show position"
+                android:id="@+id/startButton"
+
+                ></Button>
         </TableRow>
     </TableLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

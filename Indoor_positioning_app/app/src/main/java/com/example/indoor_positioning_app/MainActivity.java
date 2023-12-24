@@ -4,17 +4,30 @@ import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
 import static com.example.indoor_positioning_app.CustomDrawing.drawPoly;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.text.BoringLayout;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
+import android.Manifest;
 
 import com.j256.ormlite.misc.IOUtils;
 
@@ -55,11 +68,14 @@ import mil.nga.sf.Point;
 
 public class MainActivity extends AppCompatActivity implements RecyclerViewInterface {
 
+    private static final int REQUEST_ENABLE_BT = 312;
     private ArrayList<Floor> _floorItems = null;
     private List<GeoPackage> _geoPackages = null;
     private List<Bitmap> _floorPlans = null;
     private ImageView _floorImageView = null;
     private MqttAndroidClient mqttAndroidClient = null;
+    RegionsBeaconService regionsNewBeaconService;
+    Boolean mBeaconBound = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,15 +84,41 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
         _floorImageView = (ImageView) findViewById(R.id.currentImage);
 
-        PrepareFloorPlans();
-        ShowImageAtPosition(0);
-        InitializeFloorsRecycleView(_floorPlans.size());
+        //Bluetooth - TODO: add to seperate file
+        setListener();
+        Intent intent = new Intent(getApplicationContext(), BeaconServiceNew.class);
+        getApplicationContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
 
-        MQTTSubscribeDemo();
+        String[] PERMISSIONS = {android.Manifest.permission.BLUETOOTH_SCAN, android.Manifest.permission.BLUETOOTH_CONNECT};
+        ActivityCompat.requestPermissions((Activity) this, PERMISSIONS, 0);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (getApplicationContext().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        66667);
+            }
+        }
+        //regionsNewBeaconService.manualScan();
+
+//        PrepareFloorPlans();
+//        ShowImageAtPosition(0);
+//        InitializeFloorsRecycleView(_floorPlans.size());
+//
+//
+//        MQTTSubscribeDemo();
     }
 
-    private void InitializeFloorsRecycleView(int numberOfFloors)
-    {
+    private void setListener() {
+
+        findViewById(R.id.startButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                regionsNewBeaconService.manualScan();
+            }
+        });
+    }
+
+    private void InitializeFloorsRecycleView(int numberOfFloors) {
         RecyclerView floorsRecyclerView = (RecyclerView) findViewById(R.id.rvFloors);
         _floorItems = Floor.createFloorList(numberOfFloors);
         // Create adapter passing in the sample user data
@@ -88,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     }
 
     public File BytesToFile(byte[] buffer) throws IOException {
-        String path = MainActivity.this.getFilesDir() +"/targetFile3.gpkg";
+        String path = MainActivity.this.getFilesDir() + "/targetFile3.gpkg";
         Files.deleteIfExists(Paths.get(path));
 
         File targetFile = new File(path);
@@ -99,8 +141,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         return targetFile;
     }
 
-    private String[] ListGpkgsFromAssets()
-    {
+    private String[] ListGpkgsFromAssets() {
         try {
             return getAssets().list("gpkgs");
         } catch (IOException e) {
@@ -109,8 +150,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         }
     }
 
-    private void PrepareFloorPlans()
-    {
+    private void PrepareFloorPlans() {
         _geoPackages = LoadFloorPlansGPKGs();
         _floorPlans = LoadImagesFromGPKGs(_geoPackages);
     }
@@ -128,8 +168,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
         // Try to import each gpkg file
         try {
-            for (String file : gpkgFiles)
-            {
+            for (String file : gpkgFiles) {
                 _gpkgManager = GeoPackageFactory.getManager(this);
                 InputStream gpkgStream = getAssets().open("gpkgs/" + file);
 
@@ -146,8 +185,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
             List<String> databases = _gpkgManager.databases();
             Collections.sort(databases);
-            for (String database: databases)
-            {
+            for (String database : databases) {
                 GeoPackage geoPackage = _gpkgManager.open(database);
                 result.add(geoPackage);
             }
@@ -157,16 +195,14 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         return result;
     }
 
-    private List<Bitmap> LoadImagesFromGPKGs(List<GeoPackage> geoPackages)
-    {
+    private List<Bitmap> LoadImagesFromGPKGs(List<GeoPackage> geoPackages) {
         List<Bitmap> result = new ArrayList<Bitmap>();
 
         Paint pt = new Paint();
         pt.setStyle(Paint.Style.STROKE);
         pt.setColor(Color.BLUE);
 
-        for (GeoPackage geoPackage: geoPackages)
-        {
+        for (GeoPackage geoPackage : geoPackages) {
             // Query Features
             List<String> features = geoPackage.getFeatureTables();
             String featureTable = features.get(0);
@@ -174,10 +210,10 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
             FeatureCursor featureCursor = featureDao.queryForAll();
 
             BoundingBox bbox = featureDao.getBoundingBox();
-            int height = (int)bbox.getMaxLatitude();
-            int width = (int)bbox.getMaxLongitude();
+            int height = (int) bbox.getMaxLatitude();
+            int width = (int) bbox.getMaxLongitude();
 
-            Bitmap myBitmap = Bitmap.createBitmap( width + 10, height + 10, Bitmap.Config.RGB_565 );
+            Bitmap myBitmap = Bitmap.createBitmap(width + 10, height + 10, Bitmap.Config.RGB_565);
             Canvas canvas = new Canvas(myBitmap);
             canvas.drawColor(Color.WHITE);
 
@@ -188,14 +224,13 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
                     if (geometryData != null && !geometryData.isEmpty()) {
 
                         Geometry geometry = geometryData.getGeometry();
-                        MultiPolygon polygon = (MultiPolygon)geometry;
+                        MultiPolygon polygon = (MultiPolygon) geometry;
                         List<Point> points = polygon.getPolygon(0).getRing(0).getPoints();
 
                         CustomDrawing.Point[] customPoints = new CustomDrawing.Point[points.size()];
 
-                        for (int i = 0; i < points.size(); i++)
-                        {
-                            customPoints[i] = new CustomDrawing.Point((int)points.get(i).getX(), (int)points.get(i).getY());
+                        for (int i = 0; i < points.size(); i++) {
+                            customPoints[i] = new CustomDrawing.Point((int) points.get(i).getX(), (int) points.get(i).getY());
                         }
                         drawPoly(canvas, pt, customPoints);
                     }
@@ -208,8 +243,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         return result;
     }
 
-    private void ShowImageAtPosition(int position)
-    {
+    private void ShowImageAtPosition(int position) {
         _floorImageView.setImageBitmap(_floorPlans.get(position));
     }
 
@@ -218,23 +252,24 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         ShowImageAtPosition(position);
     }
 
-    private void MQTTSubscribeDemo(){
+    private void MQTTSubscribeDemo() {
         mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), "tcp://192.168.5.15:1883", MqttClient.generateClientId());
 
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
                 if (reconnect) {
-                    Log.d("MQTT","Reconnected: " + serverURI) ;
+                    Log.d("MQTT", "Reconnected: " + serverURI);
                     // Because Clean Session is true, we need to re-subscribe
                     SubscribeToTopic();
                 } else {
-                    Log.d("MQTT","Connected: " + serverURI);
+                    Log.d("MQTT", "Connected: " + serverURI);
                 }
             }
 
             @Override
-            public void connectionLost(Throwable cause) {}
+            public void connectionLost(Throwable cause) {
+            }
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
@@ -242,13 +277,14 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
             }
 
             @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {}
+            public void deliveryComplete(IMqttDeliveryToken token) {
+            }
         });
 
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setCleanSession(false);
-        Log.d("MQTT","Connected");
+        Log.d("MQTT", "Connected");
 
         mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
             @Override
@@ -264,7 +300,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
             @Override
             public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                Log.d("MQTT","Failed to connect");
+                Log.d("MQTT", "Failed to connect");
             }
         });
     }
@@ -281,5 +317,73 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
                 Log.d("MQTT", "onFailure: ");
             }
         });
+    }
+
+
+    /** Defines callbacks for service binding, passed to bindService() */
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+
+            if (service instanceof BeaconServiceOld.LocalBinder) {
+                // We've bound to LocalService, cast the IBinder and get LocalService instance
+                BeaconServiceOld.LocalBinder binder = (BeaconServiceOld.LocalBinder) service;
+                regionsNewBeaconService = binder.getService();
+                mBeaconBound = true;
+            } else if (service instanceof BeaconServiceNew.LocalBinder) {
+                // We've bound to LocalService, cast the IBinder and get LocalService instance
+                BeaconServiceNew.LocalBinder binder = (BeaconServiceNew.LocalBinder) service;
+                regionsNewBeaconService = binder.getService();
+                regionsNewBeaconService.setListener(new BeaconListener() {
+
+
+                    @Override
+                    public void beaconRecieved(String uuid, int minor, int mayor, double distance, String name, int rssi, String mAdress) {
+                        Log.d("beaconRecieved", Integer.toString(rssi));
+                    }
+
+                    @Override
+                    public void scaning(Boolean scanning) {
+                        Log.d("Scanning", Boolean.toString(scanning));
+                    }
+                });
+                if (!regionsNewBeaconService.isBlueToothOn()) {
+                    askForBlueTooth();
+                }
+                mBeaconBound = true;
+            }
+
+
+        }
+
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mBeaconBound = false;
+        }
+    };
+
+    private void askForBlueTooth() {
+        Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(resultCode == RESULT_OK && requestCode == REQUEST_ENABLE_BT){
+            regionsNewBeaconService.restart();
+        }
     }
 }
