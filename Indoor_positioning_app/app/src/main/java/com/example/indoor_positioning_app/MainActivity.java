@@ -1,6 +1,7 @@
 package com.example.indoor_positioning_app;
 
 import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
+import static com.example.indoor_positioning_app.BeaconScanner.REQUEST_ENABLE_BT;
 import static com.example.indoor_positioning_app.CustomDrawing.drawPoly;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,7 +23,6 @@ import android.graphics.Paint;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.text.BoringLayout;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -68,14 +68,15 @@ import mil.nga.sf.Point;
 
 public class MainActivity extends AppCompatActivity implements RecyclerViewInterface {
 
-    private static final int REQUEST_ENABLE_BT = 312;
+
     private ArrayList<Floor> _floorItems = null;
     private List<GeoPackage> _geoPackages = null;
     private List<Bitmap> _floorPlans = null;
     private ImageView _floorImageView = null;
     private MqttAndroidClient mqttAndroidClient = null;
-    RegionsBeaconService regionsNewBeaconService;
-    Boolean mBeaconBound = false;
+
+    private BeaconScanner beaconScanner = null;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,36 +85,30 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
         _floorImageView = (ImageView) findViewById(R.id.currentImage);
 
+        beaconScanner = new BeaconScanner(getApplicationContext(), this);
+
+       // startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                66667);
+
         //Bluetooth - TODO: add to seperate file
-        setListener();
-        Intent intent = new Intent(getApplicationContext(), BeaconServiceNew.class);
-        getApplicationContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+        SetBluetoothScanListener();
 
-        String[] PERMISSIONS = {android.Manifest.permission.BLUETOOTH_SCAN, android.Manifest.permission.BLUETOOTH_CONNECT};
-        ActivityCompat.requestPermissions((Activity) this, PERMISSIONS, 0);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (getApplicationContext().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        66667);
-            }
-        }
-        //regionsNewBeaconService.manualScan();
+        PrepareFloorPlans();
+        ShowImageAtPosition(0);
+        InitializeFloorsRecycleView(_floorPlans.size());
 
-//        PrepareFloorPlans();
-//        ShowImageAtPosition(0);
-//        InitializeFloorsRecycleView(_floorPlans.size());
-//
-//
-//        MQTTSubscribeDemo();
+
+        MQTTSubscribeDemo();
     }
 
-    private void setListener() {
+    private void SetBluetoothScanListener() {
 
         findViewById(R.id.startButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                regionsNewBeaconService.manualScan();
+                beaconScanner.Scan();
             }
         });
     }
@@ -319,71 +314,11 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         });
     }
 
-
-    /** Defines callbacks for service binding, passed to bindService() */
-    private ServiceConnection mConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-
-            if (service instanceof BeaconServiceOld.LocalBinder) {
-                // We've bound to LocalService, cast the IBinder and get LocalService instance
-                BeaconServiceOld.LocalBinder binder = (BeaconServiceOld.LocalBinder) service;
-                regionsNewBeaconService = binder.getService();
-                mBeaconBound = true;
-            } else if (service instanceof BeaconServiceNew.LocalBinder) {
-                // We've bound to LocalService, cast the IBinder and get LocalService instance
-                BeaconServiceNew.LocalBinder binder = (BeaconServiceNew.LocalBinder) service;
-                regionsNewBeaconService = binder.getService();
-                regionsNewBeaconService.setListener(new BeaconListener() {
-
-
-                    @Override
-                    public void beaconRecieved(String uuid, int minor, int mayor, double distance, String name, int rssi, String mAdress) {
-                        Log.d("beaconRecieved", Integer.toString(rssi));
-                    }
-
-                    @Override
-                    public void scaning(Boolean scanning) {
-                        Log.d("Scanning", Boolean.toString(scanning));
-                    }
-                });
-                if (!regionsNewBeaconService.isBlueToothOn()) {
-                    askForBlueTooth();
-                }
-                mBeaconBound = true;
-            }
-
-
-        }
-
-
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-            mBeaconBound = false;
-        }
-    };
-
-    private void askForBlueTooth() {
-        Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(resultCode == RESULT_OK && requestCode == REQUEST_ENABLE_BT){
-            regionsNewBeaconService.restart();
+            beaconScanner.RestartBeaconService();
         }
     }
 }
