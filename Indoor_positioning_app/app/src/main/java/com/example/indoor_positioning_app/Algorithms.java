@@ -1,13 +1,23 @@
 package com.example.indoor_positioning_app;
 
+
+import android.util.Log;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 
 //IDW was generated using ChatGPT
 public class Algorithms {
+    BeaconScanner _beaconScanner = null;
+    MQTTHelper _mqttHelper = null;
 
-    public Algorithms()
+    public Algorithms(BeaconScanner beaconScanner, MQTTHelper mqttHelper)
     {
+        _beaconScanner = beaconScanner;
+        _mqttHelper = mqttHelper;
     }
     // Function to calculate inverse distance weighting interpolation in 3D
     public static double inverseDistanceWeighting3D(List<DataPoint3D> dataPoints, double x, double y, double z, int power) {
@@ -89,5 +99,61 @@ public class Algorithms {
         double interpolatedValue = inverseDistanceWeighting3D(dataPoints, xInterpolated, yInterpolated, zInterpolated, power);
 
         System.out.println("Interpolated value at (" + xInterpolated + ", " + yInterpolated + ", " + zInterpolated + "): " + interpolatedValue);
+    }
+
+    public void IDW()
+    {
+        //https://jenkov.com/tutorials/java-concurrency/creating-and-starting-threads.html
+        Thread thread = new Thread(){
+            public void run(){
+                //wait a little to obtain data
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                while (!IsDataAvailable())
+                {
+                    System.out.println("Thread Running");
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                System.out.println("Data obtained");
+
+            }
+        };
+        thread.start();
+    }
+
+    private Boolean IsMQTTDataAvailable()
+    {
+        Enumeration<String> dictionaryKeys = _mqttHelper.mqttDataDict.keys();
+
+        if(_mqttHelper.mqttDataDict.size() == 0)
+        {
+            return false;
+        }
+
+        while (dictionaryKeys.hasMoreElements()) {
+            String key = dictionaryKeys.nextElement();
+
+            MQTTData data = _mqttHelper.mqttDataDict.get(key);
+
+            String reverseKey = data.DetectedShellly() + "_" + data.SrcShellly();
+
+            if(!_mqttHelper.mqttDataDict.containsKey(reverseKey))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Boolean IsDataAvailable()
+    {
+        return IsMQTTDataAvailable();
     }
 }

@@ -94,6 +94,9 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         mqttHelper = new MQTTHelper(getApplicationContext());
         mqttHelper.MQTTSubscribe();
 
+        Algorithms algorithms = new Algorithms(beaconScanner, mqttHelper);
+        algorithms.IDW();
+
         floorImageHandler = new FloorImageHandler(this);
         _floorPlans = floorImageHandler.GetFloorPlans();
         _gridedFloorPlans = floorImageHandler.GetGridedFloorPlans();
