@@ -4,8 +4,7 @@ X = 1075
 Y = 0
 FLOOR = 2
 
-//let info = Shelly.getDeviceInfo();
-//console.log(info);
+let srcInfo = Shelly.getDeviceInfo();
 
 let SCAN_DURATION = BLE.Scanner.INFINITE_SCAN;
 let ACTIVE_SCAN = true;
@@ -30,7 +29,9 @@ function scanCB(ev, res) {
   {
     sendString +=  res.local_name + "##"; 
   } 
-  sendString +=  res.rssi.toString(); 
+  sendString +=  res.rssi.toString()+"##"; 
+  
+  sendString +=  srcInfo.id; 
     
   MQTT.publish("ShellyTopic", sendString, 1, false)  
   //console.log(sendString);
