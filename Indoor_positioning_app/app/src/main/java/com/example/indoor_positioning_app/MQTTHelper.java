@@ -14,6 +14,11 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.Hashtable;
+import java.util.List;
+
 import info.mqtt.android.service.MqttAndroidClient;
 import info.mqtt.android.service.QoS;
 
@@ -25,8 +30,11 @@ public class MQTTHelper {
         _applicationContext = applicationContext;
     }
 
+    public Hashtable<String, MQTTData> mqttDataDict = null;
+
     public void MQTTSubscribe() {
         mqttAndroidClient = new MqttAndroidClient(_applicationContext, "tcp://192.168.5.15:1883", MqttClient.generateClientId());
+        mqttDataDict = new Hashtable<String, MQTTData>();
 
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
@@ -47,6 +55,13 @@ public class MQTTHelper {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 Log.i(TAG, "topic: " + topic + ", msg: " + new String(message.getPayload()));
+
+                MQTTData data = new MQTTData();
+
+                data.SetData(new String(message.getPayload()));
+
+                String dictionaryKey = data.SrcShellly() + "_" + data.DetectedShellly();
+                mqttDataDict.put(dictionaryKey, data);
             }
 
             @Override
@@ -73,7 +88,7 @@ public class MQTTHelper {
 
             @Override
             public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                Log.d("MQTT", "Failed to connect");
+                    Log.d("MQTT", "Failed to connect");
             }
         });
     }
