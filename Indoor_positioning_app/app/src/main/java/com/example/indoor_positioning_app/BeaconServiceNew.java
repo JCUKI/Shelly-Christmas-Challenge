@@ -67,58 +67,30 @@ public class BeaconServiceNew extends Service implements RegionsBeaconService {
                 device.getUuids();
                 String Name;
                 Name = (String) device.getName();
-                if(Name != null)
-                {
-                    Log.d("DEV_NAME", Name);
-                }
 
+                if(Name == null)
+                {
+                    return;
+                }
+                Name = Name.toUpperCase();
+                if(!Name.contains("SHELLY"))
+                {
+                    return;
+                }
 
                 String mAdress = device.getAddress();
 
-                int startByte = 2;
-                boolean patternFound = false;
-                while (startByte <= 5) {
-                    if (((int) scanRecord[startByte + 2] & 0xff) == 0x02 && //Identifies an iBeacon
-                            ((int) scanRecord[startByte + 3] & 0xff) == 0x15) { //Identifies correct data length
-                        patternFound = true;
-                        break;
-                    }
-                    startByte++;
+                double distance;
+                if (rssi == 0) {
+                    distance = -1.0;
                 }
 
-                if (patternFound) {
-                    //Convert to hex String
-                    byte[] uuidBytes = new byte[16];
-                    System.arraycopy(scanRecord, startByte + 4, uuidBytes, 0, 16);
-                    String hexString = bytesToHex(uuidBytes);
+                //Bellow formulas were used to calculate distance in
+                https://github.com/hipstermartin/indoor-positioning-system
+                // distance = (0.51120) * Math.pow(ratio, 6.100) + 0.115;
+                distance = (0.882909233) * Math.pow((rssi / -58), 4.57459326) + 0.045275821;
 
-                    //Here is your UUID
-                    String uuid = hexString.substring(0, 8) + "-" +
-                            hexString.substring(8, 12) + "-" +
-                            hexString.substring(12, 16) + "-" +
-                            hexString.substring(16, 20) + "-" +
-                            hexString.substring(20, 32);
-                    //Here is your Major value
-                    int major = (scanRecord[startByte + 20] & 0xff) * 0x100 + (scanRecord[startByte + 21] & 0xff);
-
-                    //Here is your Minor value
-                    int minor = (scanRecord[startByte + 22] & 0xff) * 0x100 + (scanRecord[startByte + 23] & 0xff);
-                    int txPower = (int) scanRecord[startByte + 24];
-                    ;//hard coded power value. Usually ranges between -59 to -65
-                    double distance;
-                    if (rssi == 0) {
-                        distance = -1.0;
-                    }
-
-                    double ratio = rssi * 1.0 / txPower;
-                    if (ratio < 1.0) {
-                        distance = Math.pow(ratio, 10);
-                    } else {
-                        // distance = (0.51120) * Math.pow(ratio, 6.100) + 0.115;
-                        distance = (0.882909233) * Math.pow((rssi / -58), 4.57459326) + 0.045275821;
-                    }
-                    listener.beaconRecieved(uuid, minor, major, distance, Name, rssi, mAdress);
-                }
+                listener.beaconRecieved("", -1, -1, distance, Name, rssi, mAdress);
             }
         };
     }

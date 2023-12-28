@@ -18,6 +18,8 @@ import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 
+import java.util.Hashtable;
+
 //Majority of code was taken from: https://github.com/hipstermartin/indoor-positioning-system/tree/main/Beacon-scanner
 public class BeaconScanner {
 
@@ -25,9 +27,13 @@ public class BeaconScanner {
     private RegionsBeaconService regionsNewBeaconService;
     private Context _activityContext;
 
+    public Hashtable<String, BLEBeaconData> beaconDataDict = null;
+
    public BeaconScanner(Context applicationContext, Context activityContext)
    {
        _activityContext = activityContext;
+
+       beaconDataDict = new Hashtable<String, BLEBeaconData>();
 
        Intent intent = new Intent(applicationContext, BeaconServiceNew.class);
        applicationContext.bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
@@ -57,11 +63,11 @@ public class BeaconScanner {
                 BeaconServiceNew.LocalBinder binder = (BeaconServiceNew.LocalBinder) service;
                 regionsNewBeaconService = binder.getService();
                 regionsNewBeaconService.setListener(new BeaconListener() {
-
-
                     @Override
                     public void beaconRecieved(String uuid, int minor, int mayor, double distance, String name, int rssi, String mAdress) {
-                        Log.d("beaconRecieved", Integer.toString(rssi));
+                        BLEBeaconData data  = new BLEBeaconData(distance, name, rssi, mAdress);
+                        beaconDataDict.put(name, data);
+                        Log.d("beaconRecieved", "Name: " + name + ", rssi: " + Integer.toString(rssi));
                     }
 
                     @Override
@@ -76,7 +82,9 @@ public class BeaconScanner {
         }
 
         @Override
-        public void onServiceDisconnected(ComponentName arg0) {}
+        public void onServiceDisconnected(ComponentName arg0) {
+            Log.d("onServiceDisconnected", arg0.toString());
+        }
     };
 
     private void askForBlueTooth() {
