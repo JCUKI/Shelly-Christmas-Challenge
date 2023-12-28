@@ -19,6 +19,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -74,12 +75,13 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
     private int _currentImageIndex = -1;
     private boolean _isGrided = false;
-
+    private boolean _showDevices = false;
     private BeaconScanner beaconScanner = null;
     private MQTTHelper mqttHelper = null;
 
     private FloorImageHandler floorImageHandler = null;
-
+    private Algorithms _algorithms;
+    private Bitmap _displayedImage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,17 +96,19 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         mqttHelper = new MQTTHelper(getApplicationContext());
         mqttHelper.MQTTSubscribe();
 
-        Algorithms algorithms = new Algorithms(beaconScanner, mqttHelper);
-        algorithms.IDW();
+        _algorithms = new Algorithms(beaconScanner, mqttHelper);
 
         floorImageHandler = new FloorImageHandler(this);
         _floorPlans = floorImageHandler.GetFloorPlans();
         _gridedFloorPlans = floorImageHandler.GetGridedFloorPlans();
 
-        ShowImageAtPosition(0, _isGrided);
+        floorImageHandler.mqttHelper = mqttHelper;
+
+        ShowImageAtPosition(0, _isGrided, false);
 
         InitializeFloorsRecycleView(_floorPlans.size());
         SetOnClickListenerToGridButton();
+        SetOnClickListenerToShowDevicesButton();
     }
 
     private void SetBluetoothScanListener() {
@@ -112,6 +116,22 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
             @Override
             public void onClick(View v) {
                 beaconScanner.Scan();
+
+                int[] position = _algorithms.GetPositionWithIDW(_displayedImage.getWidth(), _displayedImage.getHeight(), _floorPlans.size(), floorImageHandler.GridResolution());
+
+                //DUMY POSITION
+//                int[] position = new int[3];//xyz
+//                position[0] = 800;
+//                position[1] = 300;
+//                position[2] = 1;
+
+                if(position[2] > Integer.MIN_VALUE)
+                {
+                    ShowImageAtPosition(position[2], _isGrided, _showDevices);
+                }
+
+                _displayedImage = floorImageHandler.DrawPosition(position, _displayedImage);
+                _floorImageView.setImageBitmap(_displayedImage);
             }
         });
     }
@@ -127,20 +147,27 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         floorsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
     }
 
-    private void ShowImageAtPosition(int position, boolean isGrided) {
+    private void ShowImageAtPosition(int position, boolean isGrided, boolean showDevices) {
         if(isGrided)
         {
-            _floorImageView.setImageBitmap(_gridedFloorPlans.get(position));
+            _displayedImage = Bitmap.createBitmap(_gridedFloorPlans.get(position));
         }
         else {
-            _floorImageView.setImageBitmap(_floorPlans.get(position));
+            _displayedImage = Bitmap.createBitmap(_floorPlans.get(position));
         }
+
+        if(showDevices)
+        {
+            _displayedImage = floorImageHandler.drawCurrentDevices(_displayedImage, position);
+        }
+
+        _floorImageView.setImageBitmap(_displayedImage);
         _currentImageIndex = position;
     }
 
     @Override
     public void onItemClick(int position) {
-        ShowImageAtPosition(position, _isGrided);
+        ShowImageAtPosition(position, _isGrided, _showDevices);
     }
 
     @Override
@@ -166,7 +193,27 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
                     button.setText("Show grid");
                     _isGrided = false;
                 }
-                ShowImageAtPosition(_currentImageIndex, _isGrided);
+                ShowImageAtPosition(_currentImageIndex, _isGrided, _showDevices);
+            }
+        });
+    }
+
+    private void SetOnClickListenerToShowDevicesButton()
+    {
+        Button button = (Button) findViewById(R.id.showDevicesButton);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!_showDevices)
+                {
+                    button.setText("Hide devices");
+                    _showDevices = true;
+                }
+                else{
+                    button.setText("Show devices");
+                    _showDevices = false;
+                }
+                ShowImageAtPosition(_currentImageIndex, _isGrided, _showDevices);
             }
         });
     }
