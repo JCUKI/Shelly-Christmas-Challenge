@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 
 import mil.nga.geopackage.BoundingBox;
@@ -45,6 +46,10 @@ public class FloorImageHandler {
     private List<GeoPackage> _geoPackages = null;
     private List<Bitmap> _floorPlans = null;
     private List<Bitmap> _gridedFloorPlans = null;
+    private int _resolution = 100;
+
+    public MQTTHelper mqttHelper = null;
+
     public FloorImageHandler(Context activityContext)
     {
         _activityContext = activityContext;
@@ -61,6 +66,10 @@ public class FloorImageHandler {
         return _gridedFloorPlans;
     }
 
+    public int GridResolution()
+    {
+        return _resolution;
+    }
 
     private File BytesToFile(byte[] buffer) throws IOException {
         String path = ((Activity) _activityContext).getFilesDir() + "/targetFile3.gpkg";
@@ -178,7 +187,7 @@ public class FloorImageHandler {
 
             Bitmap gridedBitmap = Bitmap.createBitmap(myBitmap);
             Canvas gridedCanvas = new Canvas(gridedBitmap);
-            DrawGrid(gridedCanvas, 100);
+            DrawGrid(gridedCanvas, _resolution);
             gridedResult.add(gridedBitmap);
         }
         List<List<Bitmap>> arrayOfList = new ArrayList<List<Bitmap>> ();
@@ -188,5 +197,51 @@ public class FloorImageHandler {
         return arrayOfList;
     }
 
+    public Bitmap DrawCurrentDevices(Bitmap image, int floor)
+    {
+        if(mqttHelper==null)
+        {
+            return image;
+        }
 
+        Enumeration<String> dictionaryKeys = mqttHelper.mqttDataDict.keys();
+
+        Canvas canvas = new Canvas(image);
+
+        Paint pt = new Paint();
+        pt.setStyle(Paint.Style.FILL_AND_STROKE);
+        pt.setColor(Color.RED);
+
+        while (dictionaryKeys.hasMoreElements())
+        {
+            String key = dictionaryKeys.nextElement();
+
+            MQTTData data = mqttHelper.mqttDataDict.get(key);
+
+            if(data.Z() == floor)//on the same floor
+            {
+                int posX = (int)Math.floor(data.X()/ _resolution)* _resolution;
+                int posY = (int)Math.floor(data.Y()/ _resolution)* _resolution;
+
+                canvas.drawRect(posX, posY, posX + _resolution, posY + _resolution, pt);
+            }
+        }
+        return image;
+    }
+
+    public Bitmap DrawPosition(int[] position, Bitmap bitmap)
+    {
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint pt = new Paint();
+        pt.setStyle(Paint.Style.FILL_AND_STROKE);
+        pt.setColor(Color.YELLOW);
+
+        int posX = (int)Math.floor(position[0]/ _resolution)* _resolution;
+        int posY = (int)Math.floor(position[1]/ _resolution)* _resolution;
+
+        canvas.drawRect(posX, posY, posX + _resolution, posY + _resolution, pt);
+
+        return bitmap;
+    }
 }
