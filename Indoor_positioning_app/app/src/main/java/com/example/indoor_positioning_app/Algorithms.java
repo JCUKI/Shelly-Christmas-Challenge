@@ -1,22 +1,12 @@
 package com.example.indoor_positioning_app;
 
-
-import android.util.Log;
-
-import com.j256.ormlite.stmt.query.In;
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
-import java.util.logging.XMLFormatter;
 
-//IDW was generated using ChatGPT
-public class Algorithms {
+public class Algorithms implements Runnable {
     BeaconScanner _beaconScanner = null;
     MQTTHelper _mqttHelper = null;
-
     private int _waitingTime = 0;
 
     public Algorithms(BeaconScanner beaconScanner, MQTTHelper mqttHelper)
@@ -24,8 +14,51 @@ public class Algorithms {
         _beaconScanner = beaconScanner;
         _mqttHelper = mqttHelper;
     }
+
+    @Override
+    public void run() {
+
+    }
+
+    // Sample data point class representing 3D coordinates and values
+    static class DataPoint3D {
+        private final double _x;
+        private final double _y;
+        private final double _z;
+        private final double _value;
+
+        public DataPoint3D(double x, double y, double z, double value) {
+            this._x = x;
+            this._y = y;
+            this._z = z;
+            this._value = value;
+        }
+
+        public double getX() {
+            return _x;
+        }
+
+        public double getY() {
+            return _y;
+        }
+
+        public double getZ() {
+            return _z;
+        }
+
+        public double getValue() {
+            return _value;
+        }
+    }
+
+    // Helper function to calculate Euclidean distance in 3D
+    private static double calculateDistance3D(double x1, double y1, double z1, double x2, double y2, double z2) {
+        return Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2) + Math.pow((z2 - z1), 2));
+    }
+
+    //IDW implementation was generated using ChatGPT
     // Function to calculate inverse distance weighting interpolation in 3D
-    public static double inverseDistanceWeighting3D(List<DataPoint3D> dataPoints, double x, double y, double z, int power) {
+    public static double IDW(List<DataPoint3D> dataPoints, double x, double y, double z, int power) {
         double numerator = 0.0;
         double denominator = 0.0;
 
@@ -46,46 +79,10 @@ public class Algorithms {
             // Avoid division by zero
             return 0.0;
         }
-
         return numerator / denominator;
     }
 
-    // Helper function to calculate Euclidean distance in 3D
-    private static double calculateDistance3D(double x1, double y1, double z1, double x2, double y2, double z2) {
-        return Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2) + Math.pow((z2 - z1), 2));
-    }
-
-    // Sample data point class representing 3D coordinates and values
-    static class DataPoint3D {
-        private final double x;
-        private final double y;
-        private final double z;
-        private final double value;
-
-        public DataPoint3D(double x, double y, double z, double value) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.value = value;
-        }
-
-        public double getX() {
-            return x;
-        }
-
-        public double getY() {
-            return y;
-        }
-
-        public double getZ() {
-            return z;
-        }
-
-        public double getValue() {
-            return value;
-        }
-    }
-    
+    //TODO: update as soon it obtains any MQTT data
     private Double[][][] CreateRSSIGrid(int width, int height, int resolution, int numberOfFloors, List<DataPoint3D> dataPoints)
     {
         Double[][][] RSSIGrid = new Double[(int)(width/resolution)][(int)(height/resolution)][numberOfFloors];
@@ -96,7 +93,7 @@ public class Algorithms {
             {
                 for (int y = 0; y < (int)(height/resolution); y++)
                 {
-                    RSSIGrid[x][y][z] = inverseDistanceWeighting3D(dataPoints,x,y,z,2);
+                    RSSIGrid[x][y][z] = IDW(dataPoints,x,y,z,2);
                 }
             }
         }
@@ -204,6 +201,7 @@ public class Algorithms {
             }
         };
         thread.start();
+        return null;
     }
 
     private Boolean IsMQTTDataAvailable()
