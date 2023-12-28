@@ -85,27 +85,7 @@ public class Algorithms {
             return value;
         }
     }
-    public void DemoIDW()
-    {
-        // Sample data points in 3D
-        List<DataPoint3D> dataPoints = new ArrayList<>();
-        dataPoints.add(new DataPoint3D(1.0, 1.0, 1.0, 2.0));
-        dataPoints.add(new DataPoint3D(2.0, 2.0, 2.0, 3.0));
-        dataPoints.add(new DataPoint3D(3.0, 3.0, 3.0, 5.0));
-        // Add more data points as needed
-
-        // Point for which interpolation is needed in 3D
-        double xInterpolated = 2.5;
-        double yInterpolated = 2.5;
-        double zInterpolated = 2.5;
-
-        // Interpolate the value at the specified point using inverse distance weighting in 3D
-        int power = 2; // Power parameter for inverse distance weighting
-        double interpolatedValue = inverseDistanceWeighting3D(dataPoints, xInterpolated, yInterpolated, zInterpolated, power);
-
-        System.out.println("Interpolated value at (" + xInterpolated + ", " + yInterpolated + ", " + zInterpolated + "): " + interpolatedValue);
-    }
-
+    
     private Double[][][] CreateRSSIGrid(int width, int height, int resolution, int numberOfFloors, List<DataPoint3D> dataPoints)
     {
         Double[][][] RSSIGrid = new Double[(int)(width/resolution)][(int)(height/resolution)][numberOfFloors];
