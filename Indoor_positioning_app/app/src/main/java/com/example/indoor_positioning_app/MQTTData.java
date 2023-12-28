@@ -12,7 +12,25 @@ public class MQTTData {
     private int _x,_y,_z;
 
     private String _detectedShellly, _srcShellly;
-    private int _RSSI;
+    private int _rssi;
+
+    public int X()
+    {
+        return _x;
+    }
+    public int Y()
+    {
+        return _y;
+    }
+    public int Z()
+    {
+        return _z;
+    }
+
+    public int RSSI()
+    {
+        return _rssi;
+    }
 
     public String DetectedMacMAC()
     {
@@ -56,7 +74,7 @@ public class MQTTData {
 
         _detectedMac = splitData[0].replace(":", "");;
 
-        _RSSI = TryParseInt(splitData[5], 0);
+        _rssi = TryParseInt(splitData[5], 0);
 
         _srcShellly = splitData[6];
     }

@@ -17,7 +17,9 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import info.mqtt.android.service.MqttAndroidClient;
 import info.mqtt.android.service.QoS;
@@ -25,6 +27,9 @@ import info.mqtt.android.service.QoS;
 public class MQTTHelper {
     private MqttAndroidClient mqttAndroidClient = null;
     private Context _applicationContext;
+
+    Set<String> UniqueShellyList = null;
+
     public MQTTHelper(Context applicationContext)
     {
         _applicationContext = applicationContext;
@@ -35,6 +40,7 @@ public class MQTTHelper {
     public void MQTTSubscribe() {
         mqttAndroidClient = new MqttAndroidClient(_applicationContext, "tcp://192.168.5.15:1883", MqttClient.generateClientId());
         mqttDataDict = new Hashtable<String, MQTTData>();
+        UniqueShellyList = new LinkedHashSet<>();
 
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
@@ -62,6 +68,7 @@ public class MQTTHelper {
 
                 String dictionaryKey = data.SrcShellly() + "_" + data.DetectedShellly();
                 mqttDataDict.put(dictionaryKey, data);
+                UniqueShellyList.add(data.SrcShellly());
             }
 
             @Override
