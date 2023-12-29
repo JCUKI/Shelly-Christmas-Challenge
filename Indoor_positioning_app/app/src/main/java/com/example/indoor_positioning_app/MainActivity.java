@@ -1,71 +1,24 @@
 package com.example.indoor_positioning_app;
 
-import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
 import static com.example.indoor_positioning_app.BeaconScanner.REQUEST_ENABLE_BT;
 
+import static java.lang.Thread.sleep;
+
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.drawable.BitmapDrawable;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.util.Log;
+import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.Toast;
-import android.Manifest;
 
-import com.j256.ormlite.misc.IOUtils;
-
-import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
-import org.eclipse.paho.client.mqttv3.IMqttActionListener;
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-
-import info.mqtt.android.service.MqttAndroidClient;
-import info.mqtt.android.service.QoS;
-import mil.nga.geopackage.BoundingBox;
-import mil.nga.geopackage.GeoPackage;
-import mil.nga.geopackage.GeoPackageFactory;
-import mil.nga.geopackage.GeoPackageManager;
-import mil.nga.geopackage.features.user.FeatureCursor;
-import mil.nga.geopackage.features.user.FeatureDao;
-import mil.nga.geopackage.features.user.FeatureRow;
-import mil.nga.geopackage.geom.GeoPackageGeometryData;
-import mil.nga.sf.Geometry;
-import mil.nga.sf.MultiPolygon;
-import mil.nga.sf.Point;
 
 public class MainActivity extends AppCompatActivity implements RecyclerViewInterface {
 
@@ -74,14 +27,15 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     private ImageView _floorImageView = null;
 
     private int _currentImageIndex = -1;
+    private Bitmap _displayedImage;
+
     private boolean _isGrided = false;
     private boolean _showDevices = false;
-    private BeaconScanner beaconScanner = null;
-    private MQTTHelper mqttHelper = null;
 
-    private FloorImageHandler floorImageHandler = null;
+    private BeaconScanner _beaconScanner = null;
+    private MQTTHelper _mqttHelper = null;
+    private FloorImageHandler _floorImageHandler = null;
     private Algorithms _algorithms;
-    private Bitmap _displayedImage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,21 +44,28 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
         _floorImageView = (ImageView) findViewById(R.id.currentImage);
 
-        beaconScanner = new BeaconScanner(getApplicationContext(), this);
+        _beaconScanner = new BeaconScanner(getApplicationContext(), this);
+
         SetBluetoothScanListener();
 
-        mqttHelper = new MQTTHelper(getApplicationContext());
-        mqttHelper.MQTTSubscribe();
+        _mqttHelper = new MQTTHelper(getApplicationContext());
+        _mqttHelper.MQTTSubscribe();
 
-        _algorithms = new Algorithms(beaconScanner, mqttHelper);
+        _floorImageHandler = new FloorImageHandler(this);
+        _floorImageHandler.mqttHelper = _mqttHelper;
 
-        floorImageHandler = new FloorImageHandler(this);
-        _floorPlans = floorImageHandler.GetFloorPlans();
-        _gridedFloorPlans = floorImageHandler.GetGridedFloorPlans();
+        _floorPlans = _floorImageHandler.GetFloorPlans();
+        _gridedFloorPlans = _floorImageHandler.GetGridedFloorPlans();
 
-        floorImageHandler.mqttHelper = mqttHelper;
-
+        //Setting image, recycle view and OnClickListeneres
         ShowImageAtPosition(0, _isGrided, false);
+
+        _algorithms = new Algorithms(_beaconScanner, _mqttHelper);
+        _algorithms.imageWidth = _displayedImage.getWidth();
+        _algorithms.imageHeight = _displayedImage.getHeight();
+        _algorithms.numberOfFloors = _floorPlans.size();
+        _algorithms.gridResolution = _floorImageHandler.GridResolution();
+        _mqttHelper.algorithmsObject = _algorithms;
 
         InitializeFloorsRecycleView(_floorPlans.size());
         SetOnClickListenerToGridButton();
@@ -115,23 +76,42 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         findViewById(R.id.startButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                beaconScanner.Scan();
+                Handler handler = new Handler(); // to update UI  from background
+                Thread thread = new Thread(){
+                    @Override
+                    public void run(){
+                        int _waitingTime = 0;
+                        while (!_algorithms.IsDataAvailable(-1))
+                        {
+                            try {
+                        sleep(500);
+                                _waitingTime+= 500;
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                        }
+                        System.out.println("Data obtained");
+                        for(String shelly: _mqttHelper.UniqueShellyList())
+                        {
+                            _algorithms.FillRSSIGrid(shelly);
+                        }
+                        int[] XYZposition = _algorithms.GetCurrentPositionWithIDW();
 
-                int[] position = _algorithms.GetPositionWithIDW(_displayedImage.getWidth(), _displayedImage.getHeight(), _floorPlans.size(), floorImageHandler.GridResolution());
+                        handler.post(new Runnable() {//update UI
+                            @Override
+                            public void run() {
+                                if(XYZposition[2] > Integer.MIN_VALUE)
+                                {
+                                    ShowImageAtPosition(XYZposition[2], _isGrided, _showDevices);
+                                }
 
-                //DUMY POSITION
-//                int[] position = new int[3];//xyz
-//                position[0] = 800;
-//                position[1] = 300;
-//                position[2] = 1;
-
-                if(position[2] > Integer.MIN_VALUE)
-                {
-                    ShowImageAtPosition(position[2], _isGrided, _showDevices);
-                }
-
-                _displayedImage = floorImageHandler.DrawPosition(position, _displayedImage);
-                _floorImageView.setImageBitmap(_displayedImage);
+                                _displayedImage = _floorImageHandler.DrawPosition(XYZposition, _displayedImage);
+                                _floorImageView.setImageBitmap(_displayedImage);
+                            }
+                        });
+                    }
+                };
+                thread.start();
             }
         });
     }
@@ -158,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
         if(showDevices)
         {
-            _displayedImage = floorImageHandler.drawCurrentDevices(_displayedImage, position);
+            _displayedImage = _floorImageHandler.DrawCurrentDevices(_displayedImage, position);
         }
 
         _floorImageView.setImageBitmap(_displayedImage);
@@ -174,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(resultCode == RESULT_OK && requestCode == REQUEST_ENABLE_BT){
-            beaconScanner.RestartBeaconService();
+            _beaconScanner.RestartBeaconService();
         }
     }
 

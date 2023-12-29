@@ -1,54 +1,42 @@
 package com.example.indoor_positioning_app;
 
+import static java.lang.Thread.sleep;
+
+import android.graphics.Bitmap;
+
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
-public class Algorithms implements Runnable {
+public class Algorithms {
     BeaconScanner _beaconScanner = null;
     MQTTHelper _mqttHelper = null;
     private int _waitingTime = 0;
+
+    public int imageWidth, imageHeight, numberOfFloors, gridResolution;
+
+    private volatile int[] calculatedXYZLocation;
+
+    private ReentrantLock _lockObject;
+
+    private Hashtable<String, Double[][][]> RSSIGrids = null;
+
 
     public Algorithms(BeaconScanner beaconScanner, MQTTHelper mqttHelper)
     {
         _beaconScanner = beaconScanner;
         _mqttHelper = mqttHelper;
+        _waitingTime = 0;
+
+        RSSIGrids = new Hashtable<>();
+
+        _lockObject = new ReentrantLock();
     }
 
-    @Override
-    public void run() {
-
-    }
-
-    // Sample data point class representing 3D coordinates and values
-    static class DataPoint3D {
-        private final double _x;
-        private final double _y;
-        private final double _z;
-        private final double _value;
-
-        public DataPoint3D(double x, double y, double z, double value) {
-            this._x = x;
-            this._y = y;
-            this._z = z;
-            this._value = value;
-        }
-
-        public double getX() {
-            return _x;
-        }
-
-        public double getY() {
-            return _y;
-        }
-
-        public double getZ() {
-            return _z;
-        }
-
-        public double getValue() {
-            return _value;
-        }
+    public int[] getXYZLocation() {
+        return calculatedXYZLocation;
     }
 
     // Helper function to calculate Euclidean distance in 3D
@@ -82,22 +70,34 @@ public class Algorithms implements Runnable {
         return numerator / denominator;
     }
 
-    //TODO: update as soon it obtains any MQTT data
-    private Double[][][] CreateRSSIGrid(int width, int height, int resolution, int numberOfFloors, List<DataPoint3D> dataPoints)
+    //It starts to update RSSI grid as soon as it obtains any MQTT data
+    public void FillRSSIGrid(String ShellyDevice)
     {
-        Double[][][] RSSIGrid = new Double[(int)(width/resolution)][(int)(height/resolution)][numberOfFloors];
+        List<DataPoint3D> dataPoints = GetDataPointsForDevice(ShellyDevice);
 
-        for (int z = 0; z < numberOfFloors; z++)
+        if(dataPoints.size()<2)
         {
-            for (int x = 0; x < (int)(width/resolution); x++)
+            return;
+        }
+        Double[][][] RSSIGrid = new Double[(int) (imageWidth / gridResolution)][(int) (imageHeight / gridResolution)][numberOfFloors];
+
+        RSSIGrid =  UpdateRSSIGrid(RSSIGrid, gridResolution, dataPoints);
+        RSSIGrids.put(ShellyDevice, RSSIGrid);
+    }
+
+    private Double[][][] UpdateRSSIGrid(Double[][][] grid, int resolution, List<DataPoint3D> dataPoints)
+    {
+        for (int z = 0; z < grid[0][0].length; z++)
+        {
+            for (int x = 0; x < grid.length; x++)
             {
-                for (int y = 0; y < (int)(height/resolution); y++)
+                for (int y = 0; y < grid[0].length; y++)
                 {
-                    RSSIGrid[x][y][z] = IDW(dataPoints,x,y,z,2);
+                    grid[x][y][z] = IDW(dataPoints,(x*resolution) + (int)(resolution/2),(y*resolution) + (int)(resolution/2),z,2);
                 }
             }
         }
-        return RSSIGrid;
+        return grid;
     }
 
     private List<DataPoint3D> GetDataPointsForDevice(String deviceName)
@@ -118,90 +118,52 @@ public class Algorithms implements Runnable {
             {
                 deviceX = data.X();
                 deviceY = data.Y();
-                deviceZ = data.Z();
+                deviceZ = data.Z()*100;
             }
             else if(data.DetectedShellly().equals(deviceName))
             {
-                result.add(new DataPoint3D(data.X(), data.Y(), data.Z(), data.RSSI()));
+                result.add(new DataPoint3D(data.X(), data.Y(), data.Z()*100, data.RSSI()));
             }
         }
         //-30 is max signal, according to: https://www.metageek.com/training/resources/understanding-rssi/
-        result.add(new DataPoint3D(deviceX, deviceY, deviceZ, -30));
+        result.add(new DataPoint3D(deviceX, deviceY, deviceZ, -67));
 
         return result;
     }
 
-    private int[] GetXYZLocation(List<Double[][][]> RSSIGrids)
+    public int[] GetCurrentPositionWithIDW()
     {
-        int[] XYZLocation = new int[3];
+        int[] currentClossest = new int[4];//xyz, distance
+        currentClossest[2] = Integer.MIN_VALUE;
+        currentClossest[3] = Integer.MAX_VALUE;
 
-        int[] currentCLossest = new int[4];//xyz, distance
-        currentCLossest[3] = Integer.MAX_VALUE;
+        Object[] shellyDevices = _mqttHelper.UniqueShellyList().toArray();
 
-        Object[] shellyDevices = _mqttHelper.UniqueShellyList.toArray();
 
-        for (int z = 0; z < RSSIGrids.get(0)[0][0].length; z++) {
-            for (int x = 0; x < RSSIGrids.get(0).length; x++) {
-                for (int y = 0; y < RSSIGrids.get(0)[x].length; y++) {
+        for (int x = 0; x < RSSIGrids.get(shellyDevices[0]).length; x++) {
+            for (int y = 0; y < RSSIGrids.get(shellyDevices[0])[x].length; y++) {
+                for (int z = 0; z < RSSIGrids.get(shellyDevices[0])[x][z].length; z++) {
+                    Enumeration<String> RSSIGridsKeys = RSSIGrids.keys();
 
                     int distance = 0;
-                    for (int i = 0; i < RSSIGrids.size(); i++) {
-                        int gridValue = Integer.valueOf(RSSIGrids.get(i)[x][y][z].intValue());
-                        String ShellyDevice = shellyDevices[i].toString();
-                        int RSSIValue = _beaconScanner.beaconDataDict.get(ShellyDevice)._rssi;//DETECTED VALUE OF SMARTPHONE
+                    while (RSSIGridsKeys.hasMoreElements()) {
+                        String key = RSSIGridsKeys.nextElement();
+                        int gridValue = Integer.valueOf(RSSIGrids.get(key)[x][y][z].intValue());
+                        int RSSIValue = _beaconScanner.beaconDataDict.get(key)._rssi;//DETECTED VALUE OF SMARTPHONE
                         distance +=Math.abs(gridValue-RSSIValue);
                     }
 
-                    if(distance < currentCLossest[3])
+                    if(distance < currentClossest[3])
                     {
-                        currentCLossest[3] = distance;
-                        currentCLossest[0] = x;
-                        currentCLossest[1] = x;
-                        currentCLossest[2] = x;
+                        currentClossest[3] = distance;
+                        currentClossest[0] = x*gridResolution;
+                        currentClossest[1] = y*gridResolution;
+                        currentClossest[2] = z;
                     }
                 }
             }
         }
-        return XYZLocation;
-    }
-
-    public int[] GetPositionWithIDW(int width, int height, int numberOfFloors, int resolution)
-    {
-        //https://jenkov.com/tutorials/java-concurrency/creating-and-starting-threads.html
-        Thread thread = new Thread(){
-            public void run(){
-                //Wait a little to obtain data
-                try {
-                    _waitingTime += 500;
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                while (!IsDataAvailable(_waitingTime))
-                {
-                    System.out.println("Thread Running");
-                    try {
-                        Thread.sleep(500);
-                        _waitingTime += 500;
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                System.out.println("Data obtained");
-                System.out.println("Creating grid");
-
-                List<Double[][][]> RSSIGrids = new ArrayList<>();
-                //Create RSSI grid for each detected device
-                for (String ShellyDevice: _mqttHelper.UniqueShellyList)
-                {
-                    List<DataPoint3D> dataPoints = GetDataPointsForDevice(ShellyDevice);
-                    RSSIGrids.add(CreateRSSIGrid(width, height, resolution, numberOfFloors, dataPoints));
-                }
-                int[] XYLocation = GetXYZLocation(RSSIGrids);
-            }
-        };
-        thread.start();
-        return null;
+        return currentClossest;
     }
 
     private Boolean IsMQTTDataAvailable()
@@ -238,7 +200,7 @@ public class Algorithms implements Runnable {
         {
             String beaconKey = beaconDictionaryKeys.nextElement();
 
-            for (String entry: _mqttHelper.UniqueShellyList)
+            for (String entry: _mqttHelper.UniqueShellyList())
             {
                 if(beaconKey.equals(entry))
                 {
@@ -250,7 +212,7 @@ public class Algorithms implements Runnable {
         //Tries to find data for all shellys in beaconDataDict,
         if(waitingTime < 10000)
         {
-            return foundEntries == _mqttHelper.UniqueShellyList.size();
+            return foundEntries == _mqttHelper.UniqueShellyList().size();
         }
         else// If it takes too long, try to find at least two entries
         {
@@ -258,7 +220,7 @@ public class Algorithms implements Runnable {
         }
     }
 
-    private Boolean IsDataAvailable(int waitingTime)
+    public Boolean IsDataAvailable(int waitingTime)
     {
         return IsMQTTDataAvailable() && IsBeaconScannerDataAvailable(waitingTime);
     }

@@ -126,7 +126,6 @@ public class FloorImageHandler {
                 } catch (Exception ex) {
                 }
             }
-
             List<String> databases = _gpkgManager.databases();
             Collections.sort(databases);
             for (String database : databases) {
