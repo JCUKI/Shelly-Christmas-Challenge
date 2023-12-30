@@ -225,7 +225,20 @@ public class FloorImageHandler {
                 int posX = (int)Math.floor(data.X()/ _resolution)* _resolution;
                 int posY = (int)Math.floor(data.Y()/ _resolution)* _resolution;
 
-                canvas.drawRect(posX, posY, posX + _resolution, posY + _resolution, pt);
+                posY = image.getHeight() - posY - (int)(_resolution/2);
+                if(posY < _resolution)
+                {
+                    posY = _resolution/2;
+                }else if(posY > (image.getHeight() - _resolution/2))
+                {
+                    posY = (image.getHeight() - _resolution/2);
+                }
+
+                posX +=(int)(_resolution/2);
+
+                canvas.drawCircle(posX, posY, (int)(_resolution/2), pt);
+
+                //canvas.drawRect(posX, posY, posX + _resolution, posY + _resolution, pt);
             }
         }
         return image;
@@ -240,9 +253,20 @@ public class FloorImageHandler {
         pt.setColor(Color.YELLOW);
 
         int posX = (int)Math.floor(position[0]/ _resolution)* _resolution;
-        int posY = (int)Math.floor(position[1]/ _resolution)* _resolution;
+        int posY = bitmap.getHeight() - (int)Math.floor(position[1]/ _resolution)* _resolution;
 
-        canvas.drawRect(posX, posY, posX + _resolution, posY + _resolution, pt);
+
+        if(posY < _resolution)
+        {
+            posY = _resolution/2;
+        }else if(posY > (bitmap.getHeight() - _resolution/2))
+        {
+            posY = (bitmap.getHeight() - _resolution/2);
+        }
+
+        posX +=(int)(_resolution/2);
+
+        canvas.drawCircle(posX, posY, (int)(_resolution/2), pt);
 
         return bitmap;
     }

@@ -37,6 +37,8 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     private boolean _isGrided = false;
     private boolean _showDevices = false;
 
+    private int[] _XYZposition = null;
+
     private BeaconScanner _beaconScanner = null;
     private MQTTHelper _mqttHelper = null;
     private FloorImageHandler _floorImageHandler = null;
@@ -103,6 +105,8 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         outState.putBoolean("_isGrided", _isGrided);
         outState.putBoolean("_showDevices", _showDevices);
 
+
+
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         _displayedImage.compress(Bitmap.CompressFormat.PNG, 100, stream);
 
@@ -113,6 +117,13 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+        String deviceTitle = !_showDevices? "Show devices": "Hide devices";
+        menu.getItem(0).setTitle(deviceTitle);
+
+        String gridTitle = !_isGrided? "Show grid": "Hide grid";
+        menu.getItem(1).setTitle(gridTitle);
+
+
         return true;
     }
 
@@ -135,6 +146,8 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         findViewById(R.id.startButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                _beaconScanner.Scan();
+
                 Handler handler = new Handler(); // to update UI  from background
                 Thread thread = new Thread(){
                     @Override
@@ -154,17 +167,17 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
                         {
                             _algorithms.FillRSSIGrid(shelly);
                         }
-                        int[] XYZposition = _algorithms.GetCurrentPositionWithIDW();
+                        _XYZposition = _algorithms.GetCurrentPositionWithIDW();
 
                         handler.post(new Runnable() {//update UI
                             @Override
                             public void run() {
-                                if(XYZposition[2] > Integer.MIN_VALUE)//If multiple floors are present
+                                if(_XYZposition[2] > Integer.MIN_VALUE)//If multiple floors are present
                                 {
-                                    ShowImageAtPosition(XYZposition[2], _isGrided, _showDevices);
+                                    ShowImageAtPosition(_XYZposition[2], _isGrided, _showDevices);
                                 }
 
-                                _displayedImage = _floorImageHandler.DrawPosition(XYZposition, _displayedImage);
+                                _displayedImage = _floorImageHandler.DrawPosition(_XYZposition, _displayedImage);
                                 _floorImageView.setImageBitmap(_displayedImage);
                             }
                         });

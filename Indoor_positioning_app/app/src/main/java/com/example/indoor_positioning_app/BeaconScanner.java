@@ -78,7 +78,7 @@ public class BeaconScanner {
                 if (!regionsNewBeaconService.isBlueToothOn()) {
                     askForBlueTooth();
                 }
-                Scan();
+
             }
         }
 
