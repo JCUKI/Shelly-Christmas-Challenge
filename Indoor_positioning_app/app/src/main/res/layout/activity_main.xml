@@ -1,78 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <TableLayout
+    <include
+        android:id="@+id/toolBar"
+        layout="@layout/toolbar_layout"/>
+
+    <LinearLayout
+        android:id="@+id/imageLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-        <TableRow
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <com.ortiz.touchview.TouchImageView
+            android:id="@+id/currentImage"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-        <TextView
-            android:text="Floors"/>
-        </TableRow>
-        <TableRow>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvFloors"
-                android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-        </TableRow>
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <com.ortiz.touchview.TouchImageView
-                android:id="@+id/currentImage"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-        </TableRow>
-
-        <TableRow
+            android:layout_height="wrap_content" />
+        <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center_horizontal|center_vertical">
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center|center_horizontal"
-                android:text="Show position"
-                android:id="@+id/startButton"
-                ></Button>
-        </TableRow>
-        <TableRow
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center_horizontal|center_vertical">
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center|center_horizontal"
-                android:text="Show grid"
-                android:id="@+id/showGridButton"
-                ></Button>
-        </TableRow>
-        <TableRow
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center_horizontal|center_vertical">
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center|center_horizontal"
-                android:text="Show devices"
-                android:id="@+id/showDevicesButton"
-                ></Button>
-        </TableRow>
-    </TableLayout>
-</androidx.constraintlayout.widget.ConstraintLayout>
+            android:layout_gravity="center|center_horizontal"
+            android:text="Show position"
+            android:id="@+id/startButton"
+            ></Button>
+    </LinearLayout>
+</LinearLayout>

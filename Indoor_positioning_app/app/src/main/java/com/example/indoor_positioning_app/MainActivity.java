@@ -4,7 +4,9 @@ import static com.example.indoor_positioning_app.BeaconScanner.REQUEST_ENABLE_BT
 
 import static java.lang.Thread.sleep;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -13,6 +15,8 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -37,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     private FloorImageHandler _floorImageHandler = null;
     private Algorithms _algorithms;
 
+    private int _numberOfFloors = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,9 +49,13 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
         _floorImageView = (ImageView) findViewById(R.id.currentImage);
 
+        Toolbar toolbar = findViewById(R.id.toolBar);
+        setSupportActionBar(toolbar);
+        //getSupportActionBar().setDisplayShowTitleEnabled(false);
+
         _beaconScanner = new BeaconScanner(getApplicationContext(), this);
 
-        SetBluetoothScanListener();
+//        SetBluetoothScanListener();
 
         _mqttHelper = new MQTTHelper(getApplicationContext());
         _mqttHelper.MQTTSubscribe();
@@ -67,9 +76,29 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         _algorithms.gridResolution = _floorImageHandler.GridResolution();
         _mqttHelper.algorithmsObject = _algorithms;
 
-        InitializeFloorsRecycleView(_floorPlans.size());
-        SetOnClickListenerToGridButton();
-        SetOnClickListenerToShowDevicesButton();
+
+        _numberOfFloors = _floorPlans.size();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+
+        if(item.getItemId() == R.id.showDevicesButton)
+        {
+            ShowDevices(item);
+        }
+        else if (item.getItemId() == R.id.showGridButton)
+        {
+            ShowGrid(item);
+        }
+
+        return true;
     }
 
     private void SetBluetoothScanListener() {
@@ -116,17 +145,6 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         });
     }
 
-    private void InitializeFloorsRecycleView(int numberOfFloors) {
-        RecyclerView floorsRecyclerView = (RecyclerView) findViewById(R.id.rvFloors);
-        ArrayList<Floor> _floorItems = Floor.createFloorList(numberOfFloors);
-        // Create adapter passing in the sample user data
-        FloorAdapter adapter = new FloorAdapter(_floorItems, this);
-        // Attach the adapter to the recyclerview to populate items
-        floorsRecyclerView.setAdapter(adapter);
-        // Set layout manager to position the items
-        floorsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-    }
-
     private void ShowImageAtPosition(int position, boolean isGrided, boolean showDevices) {
         if(isGrided)
         {
@@ -158,43 +176,33 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         }
     }
 
-    private void SetOnClickListenerToGridButton()
+    private void ShowGrid(MenuItem item)
     {
-        Button button = (Button) findViewById(R.id.showGridButton);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(!_isGrided)
-                {
-                    button.setText("Hide grid");
-                    _isGrided = true;
-                }
-                else{
-                    button.setText("Show grid");
-                    _isGrided = false;
-                }
-                ShowImageAtPosition(_currentImageIndex, _isGrided, _showDevices);
-            }
-        });
+        if(!_isGrided)
+        {
+            item.setTitle("Hide grid");
+            _isGrided = true;
+        }
+        else{
+            item.setTitle("Show grid");
+            _isGrided = false;
+        }
+        item.setChecked(_isGrided);
+        ShowImageAtPosition(_currentImageIndex, _isGrided, _showDevices);
     }
 
-    private void SetOnClickListenerToShowDevicesButton()
+    private void ShowDevices(MenuItem item)
     {
-        Button button = (Button) findViewById(R.id.showDevicesButton);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(!_showDevices)
-                {
-                    button.setText("Hide devices");
-                    _showDevices = true;
-                }
-                else{
-                    button.setText("Show devices");
-                    _showDevices = false;
-                }
-                ShowImageAtPosition(_currentImageIndex, _isGrided, _showDevices);
-            }
-        });
+        if(!_showDevices)
+        {
+            item.setTitle("Hide devices");
+            _showDevices = true;
+        }
+        else{
+            item.setTitle("Show devices");
+            _showDevices = false;
+        }
+        item.setChecked(_showDevices);
+        ShowImageAtPosition(_currentImageIndex, _isGrided, _showDevices);
     }
 }
