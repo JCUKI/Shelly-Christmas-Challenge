@@ -112,10 +112,12 @@ public class FloorImageHandler {
 
         // Try to import each gpkg file
         try {
-            for (String file : gpkgFiles) {
-                _gpkgManager = GeoPackageFactory.getManager(_activityContext);
-                InputStream gpkgStream = _activityContext.getAssets().open("gpkgs/" + file);
+            _gpkgManager = GeoPackageFactory.getManager(_activityContext);
+            //This should be called if gpkg file deletions are made
+            _gpkgManager.deleteAll();
 
+            for (String file : gpkgFiles) {
+                InputStream gpkgStream = _activityContext.getAssets().open("gpkgs/" + file);
                 gpkgStream.reset();
                 byte[] arr = new byte[gpkgStream.available()];
                 DataInputStream dataInputStream = new DataInputStream(gpkgStream);
@@ -126,6 +128,7 @@ public class FloorImageHandler {
                 } catch (Exception ex) {
                 }
             }
+
             List<String> databases = _gpkgManager.databases();
             Collections.sort(databases);
             for (String database : databases) {

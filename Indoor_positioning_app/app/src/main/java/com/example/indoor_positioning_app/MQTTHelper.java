@@ -24,9 +24,6 @@ import info.mqtt.android.service.QoS;
 public class MQTTHelper {
     private MqttAndroidClient mqttAndroidClient = null;
     private Context _applicationContext;
-
-    public Algorithms algorithmsObject = null;
-
     private Set<String> _uniqueShellyList = null;
 
     public MQTTHelper(Context applicationContext)

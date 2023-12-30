@@ -7,21 +7,19 @@ import static java.lang.Thread.sleep;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Color;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.PersistableBundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 
-import java.util.ArrayList;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements RecyclerViewInterface {
@@ -30,9 +28,12 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     private List<Bitmap> _gridedFloorPlans = null;
     private ImageView _floorImageView = null;
 
-    private int _currentImageIndex = -1;
-    private Bitmap _displayedImage;
 
+    //relevant in case of multiple floor images
+    private int _currentImageIndex = -1;
+    private int _numberOfFloors = 0;
+
+    private Bitmap _displayedImage;
     private boolean _isGrided = false;
     private boolean _showDevices = false;
 
@@ -41,7 +42,6 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     private FloorImageHandler _floorImageHandler = null;
     private Algorithms _algorithms;
 
-    private int _numberOfFloors = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,46 +49,76 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
         _floorImageView = (ImageView) findViewById(R.id.currentImage);
 
+        //Setting up toolbar
         Toolbar toolbar = findViewById(R.id.toolBar);
         setSupportActionBar(toolbar);
-        //getSupportActionBar().setDisplayShowTitleEnabled(false);
 
+        //Creating beacon scanner
         _beaconScanner = new BeaconScanner(getApplicationContext(), this);
 
-//        SetBluetoothScanListener();
-
+        //Creating MQTT object to subscribe to data from Shelly devices
         _mqttHelper = new MQTTHelper(getApplicationContext());
         _mqttHelper.MQTTSubscribe();
 
+        //Creating image handler, which will prepare floor plans images and draw curently detected devices
         _floorImageHandler = new FloorImageHandler(this);
         _floorImageHandler.mqttHelper = _mqttHelper;
 
         _floorPlans = _floorImageHandler.GetFloorPlans();
         _gridedFloorPlans = _floorImageHandler.GetGridedFloorPlans();
 
-        //Setting image, recycle view and OnClickListeneres
-        ShowImageAtPosition(0, _isGrided, false);
+        //Setting image,first parameter is relevant in case of multiple floors
 
+
+        ShowImageAtPosition(0, _isGrided, _showDevices);
+
+        if (savedInstanceState != null){
+            _isGrided = savedInstanceState.getBoolean("_isGrided");
+            _showDevices = savedInstanceState.getBoolean("_showDevices");
+
+            byte[] imageBytes = savedInstanceState.getByteArray("_displayedImage");
+            Bitmap bmp = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+            _displayedImage = bmp;
+            _floorImageView.setImageBitmap(_displayedImage);
+        }
+
+
+
+        //Algorithm object needs image width, height and resolution to create grid with interpolated values
         _algorithms = new Algorithms(_beaconScanner, _mqttHelper);
         _algorithms.imageWidth = _displayedImage.getWidth();
         _algorithms.imageHeight = _displayedImage.getHeight();
         _algorithms.numberOfFloors = _floorPlans.size();
         _algorithms.gridResolution = _floorImageHandler.GridResolution();
-        _mqttHelper.algorithmsObject = _algorithms;
 
-
+        //in case of multiple floors
         _numberOfFloors = _floorPlans.size();
+
+        SetStartButtonListener();
+    }
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putBoolean("_isGrided", _isGrided);
+        outState.putBoolean("_showDevices", _showDevices);
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        _displayedImage.compress(Bitmap.CompressFormat.PNG, 100, stream);
+
+        outState.putByteArray("_displayedImage", stream.toByteArray());
     }
 
+    //Inflate toolbar with items from resource file
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_menu, menu);
         return true;
     }
 
+    //Onclick handlers for items in toolbar menu
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-
         if(item.getItemId() == R.id.showDevicesButton)
         {
             ShowDevices(item);
@@ -97,11 +127,11 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         {
             ShowGrid(item);
         }
-
         return true;
     }
 
-    private void SetBluetoothScanListener() {
+    //Function that run the interpolation algorithm, when start button is pressed
+    private void SetStartButtonListener() {
         findViewById(R.id.startButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -129,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
                         handler.post(new Runnable() {//update UI
                             @Override
                             public void run() {
-                                if(XYZposition[2] > Integer.MIN_VALUE)
+                                if(XYZposition[2] > Integer.MIN_VALUE)//If multiple floors are present
                                 {
                                     ShowImageAtPosition(XYZposition[2], _isGrided, _showDevices);
                                 }
@@ -145,6 +175,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         });
     }
 
+    //Show image for specific floor - position
     private void ShowImageAtPosition(int position, boolean isGrided, boolean showDevices) {
         if(isGrided)
         {
@@ -160,7 +191,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         }
 
         _floorImageView.setImageBitmap(_displayedImage);
-        _currentImageIndex = position;
+        _currentImageIndex = position;//for multiple floors
     }
 
     @Override
