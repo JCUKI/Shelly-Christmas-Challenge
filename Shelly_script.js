@@ -9,34 +9,43 @@ let srcInfo = Shelly.getDeviceInfo();
 let SCAN_DURATION = BLE.Scanner.INFINITE_SCAN;
 let ACTIVE_SCAN = true;
 
-SHELLY_BLU_CACHE = {}
-SHELLY_MSG_CACHE = []
+SHELLY_BLU_CACHE = {};
 
-HTTPServer.registerEndpoint('testserver', function (req, res) {
+MAX_NUMBER_OF_MESSAGES = 1000;
+let currentMessageIndex = 0;
+SHELLY_MSG_CACHE = [];
+
+HTTPServer.registerEndpoint('testserver', 
+  function (req, res) 
+  {
 
     // check request and comapare the querystring
-    if (req.query === 'devices') {
+    if (req.query === 'devices') 
+    {
         // response with some text
         res.body = JSON.stringify(SHELLY_BLU_CACHE);
         res.code = 200;
         res.send();
     } 
-    if (req.query === 'messages') {
+    if (req.query === 'messages') 
+    {
         // response with some text
         res.body = '';
-        for (let i = 0; i < SHELLY_MSG_CACHE.length; i++) {
+        for (let i = 0; i < SHELLY_MSG_CACHE.length; i++) 
+        {
           res.body += SHELLY_MSG_CACHE [i] +'\r\n';
         } 
 
         res.code = 200;
         res.send();
     } 
-    else {
+    else 
+    {
         res.body = 'Shelly Webserver';
         res.code = 200;
         res.send();
     }
-})
+});
 
 function scanCB(ev, res) {
   if (ev !== BLE.Scanner.SCAN_RESULT) return;
@@ -64,7 +73,17 @@ function scanCB(ev, res) {
    a = res.local_name;
   SHELLY_BLU_CACHE[res.addr] = res.local_name;
   MQTT.publish("ShellyTopic", sendString, 1, false)  
-  SHELLY_MSG_CACHE.push(sendString)
+  
+  if(SHELLY_MSG_CACHE.length >=  MAX_NUMBER_OF_MESSAGES)
+  {
+    SHELLY_MSG_CACHE[currentMessageIndex] = sendString;
+    currentMessageIndex += 1;
+    currentMessageIndex  = currentMessageIndex%MAX_NUMBER_OF_MESSAGES;
+  }
+  else 
+  {
+    SHELLY_MSG_CACHE.push(sendString)
+  }  
   //console.log(sendString);
 }
 
