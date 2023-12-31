@@ -11,7 +11,8 @@ let ACTIVE_SCAN = true;
 
 SHELLY_BLU_CACHE = {};
 
-MAX_NUMBER_OF_MESSAGES = 1000;
+MAX_NUMBER_OF_MESSAGES = 10; //large numbers (more than 100) can cause Shelly to shutdown 
+
 let currentMessageIndex = 0;
 SHELLY_MSG_CACHE = [];
 
@@ -84,7 +85,7 @@ function scanCB(ev, res) {
   {
     SHELLY_MSG_CACHE.push(sendString)
   }  
-  //console.log(sendString);
+  //console.log(SHELLY_MSG_CACHE.length);
 }
 
 BLE.Scanner.Start({ duration_ms: SCAN_DURATION, active: true }, scanCB);
