@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="289.29688mm"
+   height="148.0722mm"
+   viewBox="0 0 289.29688 148.0722"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   sodipodi:docname="shelly_RSSI.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="0.74564394"
+     inkscape:cx="537.7902"
+     inkscape:cy="354.72695"
+     inkscape:window-width="2400"
+     inkscape:window-height="1421"
+     inkscape:window-x="2391"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <rect
+       x="-383.5611"
+       y="-85.831856"
+       width="1636.1697"
+       height="887.82324"
+       id="rect3" />
+    <marker
+       style="overflow:visible"
+       id="ConcaveTriangle"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path7" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="ConcaveTriangle-2"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path7-9" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="ConcaveTriangle-2-2"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path7-9-4" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="ConcaveTriangle-2-3-7"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path7-9-7-7" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="ConcaveTriangle-2-3-7-6"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path7-9-7-7-6" />
+    </marker>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(9.3012789,-54.639294)">
+    <g
+       id="g5"
+       transform="matrix(0.13748128,0,0,0.10270442,362.17747,4.7551062)">&#10;	&#10;</g>
+    <g
+       id="g4"
+       transform="matrix(0.13748128,0,0,0.10270442,-23.768709,63.541999)"
+       inkscape:transform-center-x="-23.064516"
+       inkscape:transform-center-y="-2.8387097">&#10;		<g
+   id="g2">&#10;			<circle
+   style="fill:#010002"
+   cx="232.46899"
+   cy="73.539001"
+   r="20.069"
+   id="circle1" />
+&#10;		</g>
+&#10;		<g
+   id="g3">&#10;			<path
+   style="fill:#010002"
+   d="M 332.963,57.453 V 25.28 C 332.963,11.356 321.64,0 307.683,0 H 156.028 C 142.096,0 130.764,11.356 130.764,25.28 V 57.453 H 105.232 V 287.24 h 37.018 v 81.204 h 14.03 l 3.032,75.092 h 24.077 l 3.04,-75.092 h 14.03 V 287.24 h 67.418 v 92.357 h 14.014 l 3.04,85.374 h 24.134 l 3.016,-85.374 h 14.014 v -92.365 h 33.644 V 57.453 Z M 186.665,354.65 h -13.493 -3.658 -13.494 v -67.418 h 30.637 v 67.418 z m 45.804,-247.255 c -18.655,0 -33.864,-15.184 -33.864,-33.856 0,-18.679 15.209,-33.864 33.864,-33.864 18.688,0 33.872,15.184 33.872,33.864 0,18.672 -15.184,33.856 -33.872,33.856 z m 79.839,258.407 h -13.526 -3.593 -13.526 v -78.571 h 30.653 v 78.571 z"
+   id="path1" />
+&#10;		</g>
+&#10;	</g>
+    <g
+       id="g4-6"
+       transform="matrix(0.13748128,0,0,0.10270442,230.53823,57.994421)"
+       inkscape:transform-center-x="-23.064516"
+       inkscape:transform-center-y="-2.8387097">&#10;		<g
+   id="g2-7">&#10;			<circle
+   style="fill:#010002"
+   cx="232.46899"
+   cy="73.539001"
+   r="20.069"
+   id="circle1-6" />
+&#10;		</g>
+&#10;		<g
+   id="g3-0">&#10;			<path
+   style="fill:#010002"
+   d="M 332.963,57.453 V 25.28 C 332.963,11.356 321.64,0 307.683,0 H 156.028 C 142.096,0 130.764,11.356 130.764,25.28 V 57.453 H 105.232 V 287.24 h 37.018 v 81.204 h 14.03 l 3.032,75.092 h 24.077 l 3.04,-75.092 h 14.03 V 287.24 h 67.418 v 92.357 h 14.014 l 3.04,85.374 h 24.134 l 3.016,-85.374 h 14.014 v -92.365 h 33.644 V 57.453 Z M 186.665,354.65 h -13.493 -3.658 -13.494 v -67.418 h 30.637 v 67.418 z m 45.804,-247.255 c -18.655,0 -33.864,-15.184 -33.864,-33.856 0,-18.679 15.209,-33.864 33.864,-33.864 18.688,0 33.872,15.184 33.872,33.864 0,18.672 -15.184,33.856 -33.872,33.856 z m 79.839,258.407 h -13.526 -3.593 -13.526 v -78.571 h 30.653 v 78.571 z"
+   id="path1-4" />
+&#10;		</g>
+&#10;	</g>
+    <g
+       id="g4-6-6"
+       transform="matrix(0.13748128,0,0,0.10270442,104.66798,154.95692)"
+       inkscape:transform-center-x="-23.064516"
+       inkscape:transform-center-y="-2.8387097">&#10;		<g
+   id="g2-7-1">&#10;			<circle
+   style="fill:#010002"
+   cx="232.46899"
+   cy="73.539001"
+   r="20.069"
+   id="circle1-6-5" />
+&#10;		</g>
+&#10;		<g
+   id="g3-0-8">&#10;			<path
+   style="fill:#010002"
+   d="M 332.963,57.453 V 25.28 C 332.963,11.356 321.64,0 307.683,0 H 156.028 C 142.096,0 130.764,11.356 130.764,25.28 V 57.453 H 105.232 V 287.24 h 37.018 v 81.204 h 14.03 l 3.032,75.092 h 24.077 l 3.04,-75.092 h 14.03 V 287.24 h 67.418 v 92.357 h 14.014 l 3.04,85.374 h 24.134 l 3.016,-85.374 h 14.014 v -92.365 h 33.644 V 57.453 Z M 186.665,354.65 h -13.493 -3.658 -13.494 v -67.418 h 30.637 v 67.418 z m 45.804,-247.255 c -18.655,0 -33.864,-15.184 -33.864,-33.856 0,-18.679 15.209,-33.864 33.864,-33.864 18.688,0 33.872,15.184 33.872,33.864 0,18.672 -15.184,33.856 -33.872,33.856 z m 79.839,258.407 h -13.526 -3.593 -13.526 v -78.571 h 30.653 v 78.571 z"
+   id="path1-4-6" />
+&#10;		</g>
+&#10;	</g>
+    <path
+       style="fill:#000000;stroke:#000000;stroke-width:3.07243;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#ConcaveTriangle-2)"
+       d="M 113.67847,163.12064 49.203814,100.27386"
+       id="path6-1"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:#000000;stroke:#000000;stroke-width:3.07243;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#ConcaveTriangle)"
+       d="M 93.321515,177.36915 28.84686,114.52237"
+       id="path6-1-3"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:#000000;stroke:#000000;stroke-width:3.06246;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#ConcaveTriangle-2-3-7)"
+       d="M 77.259556,64.178252 179.53718,63.171569"
+       id="path6-1-3-7"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:#000000;stroke:#000000;stroke-width:3.06233;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#ConcaveTriangle-2-3-7-6)"
+       d="M 91.200078,81.44843 194.5152,80.451941"
+       id="path6-1-3-7-9"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:#000000;stroke:#000000;stroke-width:2.99859;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#ConcaveTriangle-2-2)"
+       d="m 243.89495,107.85316 -63.3276,61.25949"
+       id="path6-1-8"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:#000000;stroke:#000000;stroke-width:2.99859;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#ConcaveTriangle-2-3-7-6)"
+       d="m 224.84219,99.859933 -63.3276,61.259497"
+       id="path6-1-8-7"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:16.9333px;text-align:center;text-anchor:middle;fill:#000000;stroke-width:0.264583"
+       x="137.66876"
+       y="107.63706"
+       id="text1"><tspan
+         sodipodi:role="line"
+         style="font-size:16.9333px;text-align:center;text-anchor:middle;stroke-width:0.264583"
+         x="137.66876"
+         y="107.63706"
+         id="tspan2">RSSI values</tspan></text>
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text3"
+       style="font-size:64px;text-align:center;white-space:pre;shape-inside:url(#rect3);fill:#000000;stroke:#000000;stroke-width:17.0079" />
+  </g>
+</svg>
