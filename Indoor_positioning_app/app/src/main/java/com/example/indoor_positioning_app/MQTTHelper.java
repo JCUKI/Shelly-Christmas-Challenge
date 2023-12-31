@@ -95,6 +95,11 @@ public class MQTTHelper {
                 disconnectedBufferOptions.setDeleteOldestMessages(false);
                 mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
                 SubscribeToTopic();
+                ((Activity) _activityContext).runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(_applicationContext, "MQTT connected to broker!", Toast.LENGTH_LONG).show();
+                    }
+                });
             }
 
             @Override

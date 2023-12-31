@@ -17,6 +17,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -27,25 +28,26 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     private List<Bitmap> _gridedFloorPlans = null;
     private ImageView _floorImageView = null;
 
-
-    //relevant in case of multiple floor images
-    private int _currentImageIndex = -1;
-    private int _numberOfFloors = 0;
-
     private Bitmap _displayedImage;
     private boolean _isGrided = false;
     private boolean _showDevices = false;
-
-    private int[] _XYZposition = null;
 
     private BeaconScanner _beaconScanner = null;
     private MQTTHelper _mqttHelper = null;
     private FloorImageHandler _floorImageHandler = null;
     private Algorithms _algorithms;
+
+    private MQTTBrokerPrompt _mqttBrokerPrompt = null;
+
     private String _mqttBrokerIP = "tcp://192.168.5.15";
     private String _mqttBrokerPORT = "1883";
 
-    private MQTTBrokerPrompt _mqttBrokerPrompt = null;
+    Context _applicationContext = null;
+
+    //relevant in case of multiple floor images
+    private int _currentImageIndex = -1;
+    private int _numberOfFloors = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,42 +55,31 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
 
         _floorImageView = (ImageView) findViewById(R.id.currentImage);
 
-        //Setting up toolbar
         Toolbar toolbar = findViewById(R.id.toolBar);
         setSupportActionBar(toolbar);
+
+        _applicationContext = getApplicationContext();
 
         //Creating beacon scanner
         _beaconScanner = new BeaconScanner(getApplicationContext(), this);
 
         //Creating MQTT object to subscribe to data from Shelly devices
         _mqttHelper = new MQTTHelper(getApplicationContext(), this);
-        if (savedInstanceState != null) {
-            _mqttBrokerIP = savedInstanceState.getString("_mqttBrokerIP");
-            _mqttBrokerPORT = savedInstanceState.getString("_mqttBrokerPORT");
-        }
+
+        RestoreMQTTParameters(savedInstanceState);
 
         _mqttHelper.MQTTSubscribe(_mqttBrokerIP, _mqttBrokerPORT);
+
         //Creating image handler, which will prepare floor plans images and draw curently detected devices
         _floorImageHandler = new FloorImageHandler(this);
         _floorImageHandler.mqttHelper = _mqttHelper;
-
         _floorPlans = _floorImageHandler.GetFloorPlans();
         _gridedFloorPlans = _floorImageHandler.GetGridedFloorPlans();
 
         //Setting image,first parameter is relevant in case of multiple floors
-
-
         ShowImageAtPosition(0, _isGrided, _showDevices);
 
-        if (savedInstanceState != null){
-            _isGrided = savedInstanceState.getBoolean("_isGrided");
-            _showDevices = savedInstanceState.getBoolean("_showDevices");
-
-            byte[] imageBytes = savedInstanceState.getByteArray("_displayedImage");
-            Bitmap bmp = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-            _displayedImage = bmp;
-            _floorImageView.setImageBitmap(_displayedImage);
-        }
+        RestoreDisplayedImage(savedInstanceState);
 
         //Algorithm object needs image width, height and resolution to create grid with interpolated values
         _algorithms = new Algorithms(_beaconScanner, _mqttHelper);
@@ -106,6 +97,27 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         _mqttBrokerPrompt.Ip(_mqttBrokerIP);
         _mqttBrokerPrompt.Port(_mqttBrokerPORT);
     }
+
+    private void RestoreMQTTParameters(Bundle savedInstanceState)
+    {
+        if (savedInstanceState == null){return;}
+        _mqttBrokerIP = savedInstanceState.getString("_mqttBrokerIP");
+        _mqttBrokerPORT = savedInstanceState.getString("_mqttBrokerPORT");
+    }
+
+    private void RestoreDisplayedImage(Bundle savedInstanceState)
+    {
+        if (savedInstanceState == null){return;}
+
+        _isGrided = savedInstanceState.getBoolean("_isGrided");
+        _showDevices = savedInstanceState.getBoolean("_showDevices");
+
+        byte[] imageBytes = savedInstanceState.getByteArray("_displayedImage");
+        Bitmap bmp = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+        _displayedImage = bmp;
+        _floorImageView.setImageBitmap(_displayedImage);
+    }
+
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -159,8 +171,9 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         findViewById(R.id.startButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Toast.makeText(_applicationContext, "Scanning for Shelly devices", Toast.LENGTH_SHORT).show();
                 _beaconScanner.Scan();
-
+                Toast.makeText(_applicationContext, "Running algorithm", Toast.LENGTH_LONG).show();
                 Handler handler = new Handler(); // to update UI  from background
                 Thread thread = new Thread(){
                     @Override
@@ -180,13 +193,14 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
                         {
                             _algorithms.FillRSSIGrid(shelly);
                         }
-                        _XYZposition = _algorithms.GetCurrentPositionWithIDW();
+                        int [] _XYZposition = _algorithms.GetCurrentPositionWithIDW();
 
                         handler.post(new Runnable() {//update UI
                             @Override
                             public void run() {
                                 if(_XYZposition[2] > Integer.MIN_VALUE)//If multiple floors are present
                                 {
+                                    Toast.makeText(_applicationContext, "Algorithm finished", Toast.LENGTH_LONG).show();
                                     ShowImageAtPosition(_XYZposition[2], _isGrided, _showDevices);
                                 }
 
