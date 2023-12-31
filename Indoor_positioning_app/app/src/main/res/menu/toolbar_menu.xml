@@ -7,4 +7,8 @@
     <item
         android:id="@+id/showGridButton"
         android:title="Show grid" />
+
+    <item
+        android:id="@+id/MQTTBrokerButton"
+        android:title="MQTT Broker" />
 </menu>

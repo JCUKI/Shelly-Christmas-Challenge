@@ -2,18 +2,17 @@ package com.example.indoor_positioning_app;
 
 import static com.example.indoor_positioning_app.BeaconScanner.REQUEST_ENABLE_BT;
 
-import static java.lang.Thread.sleep;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.PersistableBundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -43,7 +42,10 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
     private MQTTHelper _mqttHelper = null;
     private FloorImageHandler _floorImageHandler = null;
     private Algorithms _algorithms;
+    private String _mqttBrokerIP = "tcp://192.168.5.15";
+    private String _mqttBrokerPORT = "1883";
 
+    private MQTTBrokerPrompt _mqttBrokerPrompt = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,9 +61,13 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         _beaconScanner = new BeaconScanner(getApplicationContext(), this);
 
         //Creating MQTT object to subscribe to data from Shelly devices
-        _mqttHelper = new MQTTHelper(getApplicationContext());
-        _mqttHelper.MQTTSubscribe();
+        _mqttHelper = new MQTTHelper(getApplicationContext(), this);
+        if (savedInstanceState != null) {
+            _mqttBrokerIP = savedInstanceState.getString("_mqttBrokerIP");
+            _mqttBrokerPORT = savedInstanceState.getString("_mqttBrokerPORT");
+        }
 
+        _mqttHelper.MQTTSubscribe(_mqttBrokerIP, _mqttBrokerPORT);
         //Creating image handler, which will prepare floor plans images and draw curently detected devices
         _floorImageHandler = new FloorImageHandler(this);
         _floorImageHandler.mqttHelper = _mqttHelper;
@@ -84,8 +90,6 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
             _floorImageView.setImageBitmap(_displayedImage);
         }
 
-
-
         //Algorithm object needs image width, height and resolution to create grid with interpolated values
         _algorithms = new Algorithms(_beaconScanner, _mqttHelper);
         _algorithms.imageWidth = _displayedImage.getWidth();
@@ -97,15 +101,20 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         _numberOfFloors = _floorPlans.size();
 
         SetStartButtonListener();
+
+        _mqttBrokerPrompt = new MQTTBrokerPrompt(getBaseContext(), this, _mqttHelper);
+        _mqttBrokerPrompt.Ip(_mqttBrokerIP);
+        _mqttBrokerPrompt.Port(_mqttBrokerPORT);
     }
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
+        outState.putString("_mqttBrokerIP", _mqttBrokerPrompt.Ip());
+        outState.putString("_mqttBrokerPORT", _mqttBrokerPrompt.Port());
+
         outState.putBoolean("_isGrided", _isGrided);
         outState.putBoolean("_showDevices", _showDevices);
-
-
 
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         _displayedImage.compress(Bitmap.CompressFormat.PNG, 100, stream);
@@ -137,6 +146,10 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewInter
         else if (item.getItemId() == R.id.showGridButton)
         {
             ShowGrid(item);
+        }
+        else if (item.getItemId() == R.id.MQTTBrokerButton)
+        {
+            _mqttBrokerPrompt.Show();
         }
         return true;
     }

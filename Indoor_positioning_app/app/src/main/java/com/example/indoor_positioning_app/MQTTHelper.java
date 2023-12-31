@@ -2,8 +2,10 @@ package com.example.indoor_positioning_app;
 
 import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
 
+import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
@@ -23,12 +25,13 @@ import info.mqtt.android.service.QoS;
 
 public class MQTTHelper {
     private MqttAndroidClient mqttAndroidClient = null;
-    private Context _applicationContext;
+    private Context _applicationContext, _activityContext;
     private Set<String> _uniqueShellyList = null;
 
-    public MQTTHelper(Context applicationContext)
+    public MQTTHelper(Context applicationContext, Context activityContext)
     {
         _applicationContext = applicationContext;
+        _activityContext = activityContext;
     }
 
     public Set<String> UniqueShellyList()
@@ -38,8 +41,8 @@ public class MQTTHelper {
 
     public Hashtable<String, MQTTData> mqttDataDict = null;
 
-    public void MQTTSubscribe() {
-        mqttAndroidClient = new MqttAndroidClient(_applicationContext, "tcp://192.168.5.15:1883", MqttClient.generateClientId());
+    public void MQTTSubscribe(String serverIP, String serverPort) {
+        mqttAndroidClient = new MqttAndroidClient(_applicationContext, serverIP + ":" + serverPort, MqttClient.generateClientId());
         mqttDataDict = new Hashtable<String, MQTTData>();
         _uniqueShellyList = new LinkedHashSet<>();
 
@@ -96,7 +99,12 @@ public class MQTTHelper {
 
             @Override
             public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    Log.d("MQTT", "Failed to connect");
+                Log.d("MQTT", "Failed to connect");
+                ((Activity) _activityContext).runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(_applicationContext, "MQTT Failed to connect", Toast.LENGTH_LONG).show();
+                    }
+                });
             }
         });
     }
